@@ -207,18 +207,16 @@ export const OriginalAttacksViewer: React.FC = () => {
             <div className="absolute inset-0 bg-radial from-transparent via-slate-950/60 to-slate-950 pointer-events-none" />
 
             {/* Target Monster Dummy */}
-            <div className="absolute bottom-16 right-20 flex flex-col items-center">
-              <div className="relative w-36 h-36">
-                {/* Target Podium */}
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-44 h-12 bg-slate-800/80 rounded-full blur-xs border border-slate-700/60 shadow-lg" />
-                {/* Target Monster Image */}
+            {/* Target Monster Dummy (Realistic Creature standing on stone pedestal) */}
+            <div className="absolute bottom-12 right-10 sm:right-20 flex flex-col items-center">
+              <div className="relative w-36 h-44 sm:w-44 sm:h-52 flex items-center justify-center -scale-x-100">
                 <img
                   src="/src/assets/images/monster_earth_golem_1794261177699.jpg"
                   alt="Target Dummy"
-                  className={`w-full h-full object-cover rounded-2xl border-2 border-emerald-500/40 shadow-xl transition-all duration-150 ${
+                  className={`w-full h-full object-contain filter drop-shadow-[0_15px_20px_rgba(0,0,0,0.85)] transition-all duration-150 ${
                     impactHappened
-                      ? 'brightness-200 contrast-125 scale-95 translate-x-3 rotate-3'
-                      : 'brightness-100'
+                      ? 'brightness-200 contrast-150 scale-90 translate-x-4 rotate-6'
+                      : 'animate-creature-breathe'
                   }`}
                 />
                 {/* Damage Popup */}
@@ -235,22 +233,37 @@ export const OriginalAttacksViewer: React.FC = () => {
                   )}
                 </AnimatePresence>
               </div>
-              <div className="mt-2 text-xs font-bold text-slate-300">الهدف: تيراروك (المدافع)</div>
+              {/* Target 3D Pedestal */}
+              <div className="relative -mt-6 flex flex-col items-center">
+                <div className="w-32 h-5 bg-black/60 rounded-full blur-xs -mb-2" />
+                <div className="w-32 h-9 rounded-[50%] border-2 border-emerald-500/60 bg-gradient-to-b from-emerald-600/30 to-slate-900 shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center justify-center">
+                  <div className="w-20 h-5 rounded-[50%] border border-dashed border-emerald-400/50 animate-spin" />
+                </div>
+              </div>
+              <div className="mt-1 text-xs font-bold text-slate-300">الهدف: تيراروك (عملاق الأرض)</div>
             </div>
 
-            {/* Attacker Monster Dummy */}
-            <div className="absolute bottom-16 left-20 flex flex-col items-center">
-              <div className="relative w-32 h-32">
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-10 bg-slate-800/80 rounded-full blur-xs border border-slate-700/60" />
+            {/* Attacker Monster Dummy (Realistic Creature standing on stone pedestal) */}
+            <div className="absolute bottom-12 left-10 sm:left-20 flex flex-col items-center">
+              <div className="relative w-36 h-44 sm:w-44 sm:h-52 flex items-center justify-center">
                 <img
                   src="/src/assets/images/monster_fire_pyrodrake_1794261178897.jpg"
                   alt="Attacker"
-                  className={`w-full h-full object-cover rounded-2xl border-2 border-red-500/40 shadow-xl transition-transform duration-200 ${
-                    animStage === 'charging' ? 'scale-110 -translate-x-2' : ''
+                  className={`w-full h-full object-contain filter drop-shadow-[0_15px_20px_rgba(0,0,0,0.85)] transition-all duration-200 ${
+                    animStage === 'charging'
+                      ? 'scale-115 -translate-x-3 filter drop-shadow-[0_0_25px_rgba(239,68,68,0.9)]'
+                      : 'animate-creature-breathe'
                   }`}
                 />
               </div>
-              <div className="mt-2 text-xs font-bold text-slate-300">المهاجم: بايرودريك</div>
+              {/* Attacker 3D Pedestal */}
+              <div className="relative -mt-6 flex flex-col items-center">
+                <div className="w-32 h-5 bg-black/60 rounded-full blur-xs -mb-2" />
+                <div className="w-32 h-9 rounded-[50%] border-2 border-red-500/60 bg-gradient-to-b from-red-600/30 to-slate-900 shadow-[0_0_20px_rgba(239,68,68,0.6)] flex items-center justify-center">
+                  <div className="w-20 h-5 rounded-[50%] border border-dashed border-red-400/50 animate-spin" />
+                </div>
+              </div>
+              <div className="mt-1 text-xs font-bold text-slate-300">المهاجم: بايرودريك (التنين الناري)</div>
             </div>
 
             {/* --- ACTIVE ATTACK FX ANIMATION LAYERS --- */}

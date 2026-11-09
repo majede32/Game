@@ -10,11 +10,17 @@ import {
   ArrowUpCircle,
   Home,
   Sparkles,
-  ChevronRight,
-  Plus,
-  Info,
+  Layers,
+  MapPin,
+  ZoomIn,
+  ZoomOut,
   Maximize2,
-  RefreshCw,
+  ChevronRight,
+  Flame,
+  Droplets,
+  Mountain,
+  Moon,
+  Warehouse,
 } from 'lucide-react';
 
 interface FloatingIslandViewProps {
@@ -26,6 +32,14 @@ interface FloatingIslandViewProps {
   onOpenMonsterVault: (monsterId?: string) => void;
 }
 
+interface FloatingParticle {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+}
+
 export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
   playerState,
   onUpdatePlayerState,
@@ -35,9 +49,9 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
   onOpenMonsterVault,
 }) => {
   const [selectedBuilding, setSelectedBuilding] = useState<IslandBuilding | null>(null);
-  const [floatingParticles, setFloatingParticles] = useState<
-    { id: string; x: number; y: number; text: string; color: string }[]
-  >([]);
+  const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [floatingParticles, setFloatingParticles] = useState<FloatingParticle[]>([]);
 
   const addParticle = (x: number, y: number, text: string, color: string) => {
     const id = `pt_${Date.now()}_${Math.random()}`;
@@ -85,7 +99,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
         ? {
             ...b,
             foodAccumulated: 0,
-            harvestReadyAt: Date.now() + 60000, // next harvest in 1 min
+            harvestReadyAt: Date.now() + 60000,
           }
         : b
     );
@@ -164,251 +178,419 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
     return playerState.monsters.filter((m) => b.monsterIds.includes(m.id));
   };
 
+  const getBuildingIcon = (type: string, element?: string) => {
+    if (type === 'breeding') return <Heart className="w-5 h-5 text-pink-400" />;
+    if (type === 'hatchery') return <Egg className="w-5 h-5 text-yellow-400" />;
+    if (type === 'farm') return <Wheat className="w-5 h-5 text-emerald-400" />;
+    if (type === 'storage') return <Warehouse className="w-5 h-5 text-cyan-400" />;
+    if (element === 'fire') return <Flame className="w-5 h-5 text-red-400" />;
+    if (element === 'water') return <Droplets className="w-5 h-5 text-blue-400" />;
+    if (element === 'earth') return <Mountain className="w-5 h-5 text-amber-500" />;
+    if (element === 'dark') return <Moon className="w-5 h-5 text-purple-400" />;
+    return <Home className="w-5 h-5 text-amber-400" />;
+  };
+
+  // Re-spaced coordinates so tokens never collide on mobile
+  const getBuildingCoordinates = (buildingId: string) => {
+    switch (buildingId) {
+      case 'b_breeding':
+        return { x: 50, y: 16, shortName: 'التزاوج' };
+      case 'b_farm_1':
+        return { x: 22, y: 22, shortName: 'المزرعة' };
+      case 'b_hatchery':
+        return { x: 80, y: 24, shortName: 'الحاضنة' };
+      case 'b_habitat_fire':
+        return { x: 22, y: 46, shortName: 'موطن النار' };
+      case 'b_habitat_earth':
+        return { x: 50, y: 44, shortName: 'موطن الأرض' };
+      case 'b_habitat_dark':
+        return { x: 78, y: 50, shortName: 'موطن الظلام' };
+      case 'b_habitat_water':
+        return { x: 36, y: 74, shortName: 'موطن الماء' };
+      case 'b_storage':
+        return { x: 72, y: 74, shortName: 'الخزينة' };
+      default:
+        return { x: 50, y: 50, shortName: 'مبنى' };
+    }
+  };
+
   return (
-    <div className="relative w-full flex flex-col gap-4">
-      {/* Island Canvas Viewport */}
-      <div className="relative w-full aspect-[16/10] md:aspect-[16/9] max-h-[720px] rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl select-none">
-        {/* Floating Sky Island HD Art Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center transition-transform duration-700 pointer-events-none"
-          style={{ backgroundImage: `url('/src/assets/images/floating_island_backdrop_1794261176523.jpg')` }}
-        />
+    <div className="relative w-full flex flex-col gap-3 pb-16 md:pb-6">
+      {/* View Switcher & Quick Collect Bar */}
+      <div className="flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md p-2.5 rounded-2xl border border-slate-800">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setViewMode('map')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              viewMode === 'map'
+                ? 'bg-amber-500 text-slate-950 shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>الخريطة الحية</span>
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              viewMode === 'list'
+                ? 'bg-amber-500 text-slate-950 shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>إدارة المباني ({playerState.buildings.length})</span>
+          </button>
+        </div>
 
-        {/* Ambient Cloud & Lighting Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/20 pointer-events-none" />
+        <button
+          onClick={collectAllResources}
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-transform active:scale-95"
+        >
+          <Coins className="w-3.5 h-3.5 fill-current" />
+          <span className="hidden sm:inline">جمع كل الموارد</span>
+          <span className="sm:hidden">جمع الكل</span>
+        </button>
+      </div>
 
-        {/* Floating Resource Particles */}
-        <AnimatePresence>
-          {floatingParticles.map((pt) => (
-            <motion.div
-              key={pt.id}
-              initial={{ opacity: 1, y: 0, scale: 0.8 }}
-              animate={{ opacity: 0, y: -45, scale: 1.25 }}
-              exit={{ opacity: 0 }}
-              className={`absolute z-40 text-sm font-black px-2.5 py-1 rounded-lg bg-slate-950/90 border border-slate-700 shadow-xl pointer-events-none ${pt.color}`}
-              style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
-            >
-              {pt.text}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Interactive Buildings Sprinkled on Island */}
-        {playerState.buildings.map((b) => {
-          const isSelected = selectedBuilding?.id === b.id;
-          const monstersHere = getMonstersInBuilding(b);
-          const hasGoldReady = (b.goldAccumulated || 0) >= 50;
-          const isFarmReady = b.type === 'farm' && (b.foodAccumulated || 0) > 0;
-
-          return (
-            <div
-              key={b.id}
-              onClick={() => {
-                setSelectedBuilding(b);
-                if (b.type === 'breeding') onOpenBreeding();
-                else if (b.type === 'hatchery') onOpenHatchery();
-                else if (b.type === 'farm') onOpenFarm(b.id);
-              }}
-              className={`absolute cursor-pointer -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 group ${
-                isSelected ? 'scale-115 z-30' : 'hover:scale-110 z-20'
-              }`}
-              style={{ left: `${b.x}%`, top: `${b.y}%` }}
-            >
-              {/* Floating Collect Bubble above building if gold/food ready */}
-              {hasGoldReady && (
-                <button
-                  onClick={(e) => collectGold(b, e)}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-full shadow-[0_0_15px_rgba(245,158,11,0.8)] border border-yellow-200 animate-bounce whitespace-nowrap"
-                >
-                  <Coins className="w-3.5 h-3.5" />
-                  <span>+{b.goldAccumulated}</span>
-                </button>
-              )}
-
-              {isFarmReady && (
-                <button
-                  onClick={(e) => harvestFarm(b, e)}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-full shadow-[0_0_15px_rgba(16,185,129,0.8)] border border-emerald-200 animate-bounce whitespace-nowrap"
-                >
-                  <Wheat className="w-3.5 h-3.5" />
-                  <span>+{b.foodAccumulated}</span>
-                </button>
-              )}
-
-              {b.type === 'hatchery' && playerState.eggsInHatchery.length > 0 && (
-                <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 bg-purple-600 text-white font-bold text-[10px] rounded-full shadow-lg border border-purple-400 animate-pulse whitespace-nowrap">
-                  <Egg className="w-3 h-3" />
-                  <span>بيضة جاهزة</span>
-                </div>
-              )}
-
-              {/* Building Isometric Token / Pedestal */}
-              <div
-                className={`relative p-2.5 rounded-2xl backdrop-blur-md border-2 transition-all shadow-xl flex flex-col items-center justify-center min-w-[76px] ${
-                  isSelected
-                    ? 'bg-amber-500/30 border-amber-400 ring-4 ring-amber-400/40 shadow-[0_0_25px_rgba(245,158,11,0.6)]'
-                    : 'bg-slate-900/85 border-slate-700/80 group-hover:border-amber-400/60'
-                }`}
-              >
-                {/* Building Icon / Mini graphics */}
-                <div className="w-10 h-10 rounded-xl bg-slate-800/90 flex items-center justify-center shadow-inner">
-                  {b.type === 'habitat' && <Home className="w-5 h-5 text-amber-400" />}
-                  {b.type === 'breeding' && <Heart className="w-5 h-5 text-pink-400" />}
-                  {b.type === 'hatchery' && <Egg className="w-5 h-5 text-yellow-400" />}
-                  {b.type === 'farm' && <Wheat className="w-5 h-5 text-emerald-400" />}
-                  {b.type === 'storage' && <Coins className="w-5 h-5 text-cyan-400" />}
-                </div>
-
-                {/* Building Level Tag */}
-                <span className="text-[10px] font-extrabold text-white mt-1">Lv.{b.level}</span>
-
-                {/* Monster Mini Avatar strolling in habitat */}
-                {monstersHere.length > 0 && (
-                  <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full border-2 border-amber-400 overflow-hidden shadow-md">
-                    <img
-                      src={monstersHere[0].avatar}
-                      alt={monstersHere[0].name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Building Label */}
-              <div className="mt-1 text-[11px] font-bold text-white text-center bg-slate-950/80 px-2 py-0.5 rounded-md border border-slate-800 whitespace-nowrap shadow-sm">
-                {b.nameAr}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Quick Island Action Bar Overlay */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 z-20 pointer-events-auto">
-          <div className="flex items-center gap-2">
+      {/* VIEW MODE 1: LIVE INTERACTIVE ISLAND MAP */}
+      {viewMode === 'map' && (
+        <div className="relative w-full h-[460px] sm:h-[540px] md:h-[640px] rounded-3xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl select-none">
+          {/* Zoom controls */}
+          <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-800">
             <button
-              onClick={collectAllResources}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-transform active:scale-95"
+              onClick={() => setZoomLevel((z) => Math.min(1.3, z + 0.1))}
+              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-xs font-bold"
+              title="تكبير"
             >
-              <Coins className="w-4 h-4 fill-current" />
-              <span>جمع كل الذهب والغذاء</span>
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.85, z - 0.1))}
+              className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-xs font-bold"
+              title="تصغير"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoomLevel(1)}
+              className="px-2 py-1 text-[11px] font-bold text-amber-400 hover:bg-slate-800 rounded-lg"
+              title="إعادة ضبط"
+            >
+              100%
             </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-300">
-            <span>المباني: {playerState.buildings.length}</span>
-            <span>·</span>
-            <span>الوحوش: {playerState.monsters.length}</span>
+          {/* Island Scene Container with Zoom Scaling */}
+          <div
+            className="relative w-full h-full transition-transform duration-300 origin-center"
+            style={{ transform: `scale(${zoomLevel})` }}
+          >
+            {/* HD Background Island */}
+            <div
+              className="absolute inset-0 bg-cover bg-center pointer-events-none"
+              style={{
+                backgroundImage: `url('/src/assets/images/floating_island_backdrop_1794261176523.jpg')`,
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-slate-950/20 pointer-events-none" />
+
+            {/* Floating Resource Particles */}
+            <AnimatePresence>
+              {floatingParticles.map((pt) => (
+                <motion.div
+                  key={pt.id}
+                  initial={{ opacity: 1, y: 0, scale: 0.8 }}
+                  animate={{ opacity: 0, y: -45, scale: 1.25 }}
+                  exit={{ opacity: 0 }}
+                  className={`absolute z-40 text-xs md:text-sm font-black px-2 py-0.5 rounded-lg bg-slate-950/90 border border-slate-700 shadow-xl pointer-events-none ${pt.color}`}
+                  style={{ left: `${pt.x}%`, top: `${pt.y}%` }}
+                >
+                  {pt.text}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Spaced Building Pins */}
+            {playerState.buildings.map((b) => {
+              const { x, y, shortName } = getBuildingCoordinates(b.id);
+              const isSelected = selectedBuilding?.id === b.id;
+              const monstersHere = getMonstersInBuilding(b);
+              const hasGoldReady = (b.goldAccumulated || 0) >= 40;
+              const isFarmReady = b.type === 'farm' && (b.foodAccumulated || 0) > 0;
+
+              return (
+                <div
+                  key={b.id}
+                  onClick={() => {
+                    setSelectedBuilding(b);
+                    if (b.type === 'breeding') onOpenBreeding();
+                    else if (b.type === 'hatchery') onOpenHatchery();
+                    else if (b.type === 'farm') onOpenFarm(b.id);
+                  }}
+                  className={`absolute cursor-pointer -translate-x-1/2 -translate-y-1/2 transition-transform duration-200 ${
+                    isSelected ? 'scale-120 z-30' : 'hover:scale-110 z-20'
+                  }`}
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                >
+                  {/* Floating Notification Bubbles above building */}
+                  {hasGoldReady && (
+                    <button
+                      onClick={(e) => collectGold(b, e)}
+                      className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-[10px] rounded-full shadow-[0_0_12px_rgba(245,158,11,0.9)] border border-yellow-200 animate-bounce whitespace-nowrap"
+                    >
+                      <Coins className="w-3 h-3 fill-current" />
+                      <span>+{b.goldAccumulated}</span>
+                    </button>
+                  )}
+
+                  {isFarmReady && (
+                    <button
+                      onClick={(e) => harvestFarm(b, e)}
+                      className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[10px] rounded-full shadow-[0_0_12px_rgba(16,185,129,0.9)] border border-emerald-200 animate-bounce whitespace-nowrap"
+                    >
+                      <Wheat className="w-3 h-3 fill-current" />
+                      <span>+{b.foodAccumulated}</span>
+                    </button>
+                  )}
+
+                  {b.type === 'hatchery' && playerState.eggsInHatchery.length > 0 && (
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-1 px-1.5 py-0.5 bg-purple-600 text-white font-bold text-[9px] rounded-full shadow-lg border border-purple-400 animate-pulse whitespace-nowrap">
+                      <Egg className="w-2.5 h-2.5" />
+                      <span>بيضة جاهزة</span>
+                    </div>
+                  )}
+
+                  {/* Compact Game Pedestal Token */}
+                  <div
+                    className={`relative w-12 h-12 md:w-14 md:h-14 rounded-2xl backdrop-blur-md border-2 transition-all shadow-xl flex flex-col items-center justify-center ${
+                      isSelected
+                        ? 'bg-amber-500/40 border-amber-400 ring-4 ring-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.8)]'
+                        : 'bg-slate-950/85 border-slate-700/80 hover:border-amber-400/80'
+                    }`}
+                  >
+                    {getBuildingIcon(b.type, b.element)}
+
+                    {/* Level Pill */}
+                    <span className="absolute -bottom-1 -right-1 bg-slate-900 border border-slate-700 text-amber-400 text-[9px] font-black px-1 rounded-md">
+                      Lv.{b.level}
+                    </span>
+
+                    {/* Resident Monster Avatar */}
+                    {monstersHere.length > 0 && (
+                      <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full border border-amber-400 overflow-hidden shadow-sm">
+                        <img
+                          src={monstersHere[0].avatar}
+                          alt={monstersHere[0].name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clean Single-line label */}
+                  <div className="mt-1 text-[10px] md:text-xs font-black text-white text-center bg-slate-950/90 px-2 py-0.5 rounded-md border border-slate-800/80 whitespace-nowrap shadow-md">
+                    {shortName}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* VIEW MODE 2: BUILDINGS DIRECTORY (Perfect for Mobile) */}
+      {viewMode === 'list' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {playerState.buildings.map((b) => {
+            const monstersHere = getMonstersInBuilding(b);
+            const hasGold = (b.goldAccumulated || 0) > 0;
+            const hasFood = (b.foodAccumulated || 0) > 0;
+
+            return (
+              <div
+                key={b.id}
+                className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 flex flex-col justify-between gap-3 shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center">
+                      {getBuildingIcon(b.type, b.element)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-extrabold text-white">{b.nameAr}</h4>
+                      <span className="text-[11px] text-amber-400 font-bold">
+                        المستوى {b.level} / {b.maxLevel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Building Status details */}
+                <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">
+                  {b.type === 'habitat' && (
+                    <>
+                      <span>
+                        ذهب مخزن:{' '}
+                        <span className="text-amber-400 font-bold">
+                          {b.goldAccumulated || 0} / {b.maxGoldCapacity}
+                        </span>
+                      </span>
+                      <span>
+                        وحوش:{' '}
+                        <span className="text-white font-bold">
+                          {monstersHere.length} / {b.maxMonsters}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                  {b.type === 'farm' && (
+                    <>
+                      <span>المحصول: {b.currentCrop || 'غير مزروع'}</span>
+                      <span className="text-emerald-400 font-bold">
+                        +{b.foodAccumulated || 0} طعام
+                      </span>
+                    </>
+                  )}
+                  {b.type === 'breeding' && (
+                    <span>جبل التزاوج جاهز لتهجين الوحوش وإنتاج البيض</span>
+                  )}
+                  {b.type === 'hatchery' && (
+                    <span>
+                      البيوض في الحاضنة:{' '}
+                      <span className="text-purple-400 font-bold">
+                        {playerState.eggsInHatchery.length}
+                      </span>
+                    </span>
+                  )}
+                  {b.type === 'storage' && <span>سعة الخزينة تدعم تطوير جميع المباني</span>}
+                </div>
+
+                {/* Direct Action buttons */}
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+                  {b.type === 'habitat' && hasGold && (
+                    <button
+                      onClick={() => collectGold(b)}
+                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow-xs"
+                    >
+                      جمع الذهب (+{b.goldAccumulated})
+                    </button>
+                  )}
+                  {b.type === 'farm' && (
+                    <button
+                      onClick={() => onOpenFarm(b.id)}
+                      className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                    >
+                      {hasFood ? `حصاد (+${b.foodAccumulated})` : 'زراعة محاصيل'}
+                    </button>
+                  )}
+                  {b.type === 'breeding' && (
+                    <button
+                      onClick={onOpenBreeding}
+                      className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                    >
+                      بدء التزاوج
+                    </button>
+                  )}
+                  {b.type === 'hatchery' && (
+                    <button
+                      onClick={onOpenHatchery}
+                      className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                    >
+                      فحص البيض
+                    </button>
+                  )}
+                  {b.level < b.maxLevel && (
+                    <button
+                      onClick={() => upgradeBuilding(b)}
+                      className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-lg"
+                    >
+                      ترقية ({b.level * 1200} ذهب)
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Selected Building Details Drawer */}
       <AnimatePresence>
-        {selectedBuilding && (
+        {selectedBuilding && viewMode === 'map' && (
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 15 }}
-            className="p-5 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl"
+            className="p-4 bg-slate-900 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-                {selectedBuilding.type === 'habitat' && <Home className="w-7 h-7 text-amber-400" />}
-                {selectedBuilding.type === 'breeding' && (
-                  <Heart className="w-7 h-7 text-pink-400" />
-                )}
-                {selectedBuilding.type === 'hatchery' && (
-                  <Egg className="w-7 h-7 text-yellow-400" />
-                )}
-                {selectedBuilding.type === 'farm' && (
-                  <Wheat className="w-7 h-7 text-emerald-400" />
-                )}
-                {selectedBuilding.type === 'storage' && (
-                  <Coins className="w-7 h-7 text-cyan-400" />
-                )}
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                {getBuildingIcon(selectedBuilding.type, selectedBuilding.element)}
               </div>
-
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-white">{selectedBuilding.nameAr}</h3>
-                  <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
+                  <h4 className="text-base font-black text-white">{selectedBuilding.nameAr}</h4>
+                  <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
                     المستوى {selectedBuilding.level}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-1 flex items-center gap-3">
+                <div className="text-xs text-slate-400 mt-0.5">
                   {selectedBuilding.maxGoldCapacity && (
                     <span>
-                      السعة: {selectedBuilding.goldAccumulated || 0} /{' '}
-                      {selectedBuilding.maxGoldCapacity} ذهب
-                    </span>
-                  )}
-                  {selectedBuilding.maxMonsters && (
-                    <span>
-                      الوحوش: {getMonstersInBuilding(selectedBuilding).length} /{' '}
-                      {selectedBuilding.maxMonsters}
+                      ذهب: {selectedBuilding.goldAccumulated || 0} /{' '}
+                      {selectedBuilding.maxGoldCapacity}
                     </span>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Actions for Selected Building */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {selectedBuilding.type === 'habitat' && (
                 <button
                   onClick={() => collectGold(selectedBuilding)}
                   disabled={(selectedBuilding.goldAccumulated || 0) <= 0}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all"
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-xs"
                 >
-                  جمع {selectedBuilding.goldAccumulated || 0} ذهب
+                  جمع الذهب
                 </button>
               )}
-
               {selectedBuilding.type === 'breeding' && (
                 <button
                   onClick={onOpenBreeding}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                  className="px-3 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-xl shadow-xs"
                 >
-                  فتح جبل التزاوج
+                  فتح التزاوج
                 </button>
               )}
-
               {selectedBuilding.type === 'hatchery' && (
                 <button
                   onClick={onOpenHatchery}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-xs"
                 >
-                  فحص الحاضنة والبيض
+                  فحص البيض
                 </button>
               )}
-
               {selectedBuilding.type === 'farm' && (
                 <button
                   onClick={() => onOpenFarm(selectedBuilding.id)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs"
                 >
                   زراعة المحاصيل
                 </button>
               )}
-
-              {/* Upgrade Button */}
-              {selectedBuilding.level < selectedBuilding.maxLevel ? (
+              {selectedBuilding.level < selectedBuilding.maxLevel && (
                 <button
                   onClick={() => upgradeBuilding(selectedBuilding)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl transition-all"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl"
                 >
-                  <ArrowUpCircle className="w-4 h-4 text-emerald-400" />
-                  <span>ترقية المبنى ({selectedBuilding.level * 1200} ذهب)</span>
+                  ترقية ({selectedBuilding.level * 1200} ذهب)
                 </button>
-              ) : (
-                <span className="text-xs text-slate-500 font-bold px-3 py-2">
-                  الحد الأقصى للمستوى
-                </span>
               )}
-
               <button
                 onClick={() => setSelectedBuilding(null)}
-                className="px-3 py-2 text-xs text-slate-400 hover:text-white"
+                className="px-2.5 py-1.5 text-xs text-slate-400 hover:text-white"
               >
                 إغلاق
               </button>

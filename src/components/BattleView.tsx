@@ -29,6 +29,7 @@ import {
   Play,
   ArrowRight,
 } from 'lucide-react';
+import { MonsterBattleSprite } from './MonsterBattleSprite';
 
 interface BattleViewProps {
   playerState: PlayerState;
@@ -60,6 +61,8 @@ export const BattleView: React.FC<BattleViewProps> = ({
   const [battleSpeed, setBattleSpeed] = useState<number>(1);
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+  const [attackingMonsterId, setAttackingMonsterId] = useState<string | null>(null);
+  const [hitMonsterId, setHitMonsterId] = useState<string | null>(null);
   const [activeVfx, setActiveVfx] = useState<{
     key: string;
     targetId: string;
@@ -159,6 +162,17 @@ export const BattleView: React.FC<BattleViewProps> = ({
       targetId: target ? target.monster.id : attacker.monster.id,
       attackerId: attacker.monster.id,
     });
+
+    setAttackingMonsterId(attacker.monster.id);
+    if (target) {
+      setTimeout(() => {
+        setHitMonsterId(target.monster.id);
+      }, 200 / battleSpeed);
+    }
+    setTimeout(() => {
+      setAttackingMonsterId(null);
+      setHitMonsterId(null);
+    }, 550 / battleSpeed);
 
     if (skill.animationKey === 'attack_meteor_special') {
       sound.playMeteorStrike();
@@ -601,7 +615,7 @@ export const BattleView: React.FC<BattleViewProps> = ({
 
           {/* Main Battlefield Stage */}
           <div
-            className={`relative w-full aspect-[16/9] md:aspect-[21/9] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between p-4 md:p-6 transition-transform ${
+            className={`relative w-full min-h-[480px] sm:min-h-[540px] md:min-h-[620px] bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between p-3 sm:p-5 md:p-6 transition-transform ${
               screenShake ? 'translate-x-2 -translate-y-2' : ''
             }`}
           >
@@ -668,174 +682,40 @@ export const BattleView: React.FC<BattleViewProps> = ({
               </div>
             )}
 
-            {/* Top Row: AI Opponent Team (3 Monsters) */}
-            <div className="relative z-10 flex items-start justify-end gap-3 md:gap-8 pr-2 md:pr-12">
-              {enemyMonsters.map((bm) => {
-                const isCurrentTurn = bm.monster.id === activeTurnMonsterId;
-                const isTargetSelected = bm.monster.id === selectedTargetId;
-                const hpPercent = Math.max(0, (bm.currentHp / bm.monster.maxHp) * 100);
-
-                return (
-                  <div
-                    key={bm.monster.id}
-                    onClick={() => !bm.isDefeated && setSelectedTargetId(bm.monster.id)}
-                    className={`relative flex flex-col items-center cursor-pointer transition-all ${
-                      bm.isDefeated ? 'opacity-30 grayscale pointer-events-none' : ''
-                    } ${isTargetSelected ? 'scale-105' : 'hover:scale-102'}`}
-                  >
-                    {/* Floating damage text */}
-                    {floatingTexts
-                      .filter((ft) => ft.targetMonsterId === bm.monster.id)
-                      .map((ft) => (
-                        <motion.div
-                          key={ft.id}
-                          initial={{ opacity: 0, y: 10, scale: 0.6 }}
-                          animate={{ opacity: 1, y: -30, scale: ft.isCrit ? 1.3 : 1.1 }}
-                          className={`absolute -top-6 whitespace-nowrap z-40 text-sm md:text-base font-extrabold px-2 py-0.5 rounded shadow-lg bg-slate-950/90 border border-slate-700 ${ft.color}`}
-                        >
-                          {ft.text}
-                        </motion.div>
-                      ))}
-
-                    {/* Target Reticle Indicator */}
-                    {isTargetSelected && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded bg-red-600 text-white shadow-md animate-bounce whitespace-nowrap">
-                        الهدف المحدد
-                      </div>
-                    )}
-
-                    {/* Monster Portrait & Turn Aura */}
-                    <div
-                      className={`relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-2 transition-all ${
-                        isCurrentTurn
-                          ? 'border-yellow-400 ring-4 ring-yellow-400/50 shadow-[0_0_25px_rgba(250,204,21,0.8)]'
-                          : isTargetSelected
-                          ? 'border-red-500 ring-2 ring-red-500/40'
-                          : 'border-slate-700'
-                      }`}
-                    >
-                      <img
-                        src={bm.monster.avatar}
-                        alt={bm.monster.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Health & Name HUD */}
-                    <div className="w-24 md:w-32 mt-1.5 flex flex-col gap-1 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-lg border border-slate-800 text-center">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-300">
-                        <span className="truncate">{bm.monster.nameAr.split(' ')[0]}</span>
-                        <span className="text-amber-400">Lv.{bm.monster.level}</span>
-                      </div>
-                      {/* HP Bar */}
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            hpPercent > 50
-                              ? 'bg-emerald-500'
-                              : hpPercent > 20
-                              ? 'bg-amber-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${hpPercent}%` }}
-                        />
-                      </div>
-                      <div className="text-[9px] font-mono text-slate-400">
-                        {bm.currentHp} / {bm.monster.maxHp} HP
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Top Row: AI Opponent Team (3 Monsters standing on runic combat pedestals) */}
+            <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-6 md:gap-10 pr-2 md:pr-10 pt-2">
+              {enemyMonsters.map((bm) => (
+                <MonsterBattleSprite
+                  key={bm.monster.id}
+                  battleMonster={bm}
+                  isCurrentTurn={bm.monster.id === activeTurnMonsterId}
+                  isSelectedTarget={bm.monster.id === selectedTargetId}
+                  isAttacking={bm.monster.id === attackingMonsterId}
+                  isTakingHit={bm.monster.id === hitMonsterId}
+                  onSelect={() => setSelectedTargetId(bm.monster.id)}
+                  floatingTexts={floatingTexts.filter(
+                    (ft) => ft.targetMonsterId === bm.monster.id
+                  )}
+                />
+              ))}
             </div>
 
-            {/* Bottom Row: Player Team (3 Monsters) */}
-            <div className="relative z-10 flex items-end justify-start gap-3 md:gap-8 pl-2 md:pl-12">
-              {playerMonsters.map((bm) => {
-                const isCurrentTurn = bm.monster.id === activeTurnMonsterId;
-                const hpPercent = Math.max(0, (bm.currentHp / bm.monster.maxHp) * 100);
-                const staminaPercent = Math.max(
-                  0,
-                  (bm.currentStamina / bm.monster.maxStamina) * 100
-                );
-
-                return (
-                  <div
-                    key={bm.monster.id}
-                    className={`relative flex flex-col items-center transition-all ${
-                      bm.isDefeated ? 'opacity-30 grayscale pointer-events-none' : ''
-                    } ${isCurrentTurn ? 'scale-105' : ''}`}
-                  >
-                    {/* Floating Damage/Heal Text */}
-                    {floatingTexts
-                      .filter((ft) => ft.targetMonsterId === bm.monster.id)
-                      .map((ft) => (
-                        <motion.div
-                          key={ft.id}
-                          initial={{ opacity: 0, y: 10, scale: 0.6 }}
-                          animate={{ opacity: 1, y: -30, scale: 1.2 }}
-                          className={`absolute -top-6 whitespace-nowrap z-40 text-sm md:text-base font-extrabold px-2 py-0.5 rounded shadow-lg bg-slate-950/90 border border-slate-700 ${ft.color}`}
-                        >
-                          {ft.text}
-                        </motion.div>
-                      ))}
-
-                    {/* Turn Indicator */}
-                    {isCurrentTurn && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500 text-slate-950 shadow-md animate-bounce whitespace-nowrap">
-                        دورك للهجوم!
-                      </div>
-                    )}
-
-                    {/* Monster Avatar */}
-                    <div
-                      className={`relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-2 transition-all ${
-                        isCurrentTurn
-                          ? 'border-amber-400 ring-4 ring-amber-400/50 shadow-[0_0_25px_rgba(245,158,11,0.8)]'
-                          : 'border-slate-700'
-                      }`}
-                    >
-                      <img
-                        src={bm.monster.avatar}
-                        alt={bm.monster.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-
-                    {/* Monster HUD: HP and Stamina */}
-                    <div className="w-24 md:w-32 mt-1.5 flex flex-col gap-1 bg-slate-950/80 backdrop-blur-md p-1.5 rounded-lg border border-slate-800 text-center">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-300">
-                        <span className="truncate">{bm.monster.nameAr.split(' ')[0]}</span>
-                        <span className="text-amber-400">Lv.{bm.monster.level}</span>
-                      </div>
-                      {/* HP Bar */}
-                      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-300 ${
-                            hpPercent > 50
-                              ? 'bg-emerald-500'
-                              : hpPercent > 20
-                              ? 'bg-amber-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${hpPercent}%` }}
-                        />
-                      </div>
-                      {/* Stamina Bar */}
-                      <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-cyan-400 transition-all duration-300"
-                          style={{ width: `${staminaPercent}%` }}
-                        />
-                      </div>
-                      <div className="text-[9px] font-mono text-slate-400 flex justify-between">
-                        <span>{bm.currentHp} HP</span>
-                        <span className="text-cyan-300">{bm.currentStamina} STA</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Bottom Row: Player Team (3 Monsters standing on runic combat pedestals) */}
+            <div className="relative z-10 flex items-center justify-start gap-2 sm:gap-6 md:gap-10 pl-2 md:pl-10 pb-2">
+              {playerMonsters.map((bm) => (
+                <MonsterBattleSprite
+                  key={bm.monster.id}
+                  battleMonster={bm}
+                  isCurrentTurn={bm.monster.id === activeTurnMonsterId}
+                  isSelectedTarget={false}
+                  isAttacking={bm.monster.id === attackingMonsterId}
+                  isTakingHit={bm.monster.id === hitMonsterId}
+                  onSelect={() => {}}
+                  floatingTexts={floatingTexts.filter(
+                    (ft) => ft.targetMonsterId === bm.monster.id
+                  )}
+                />
+              ))}
             </div>
           </div>
 

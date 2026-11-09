@@ -14,22 +14,41 @@
   50% { transform: translateY(-8px); }
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5)); }
-  50% { opacity: 1; filter: drop-shadow(0 0 25px rgba(239, 68, 68, 0.9)); }
+@keyframes monsterBreathe {
+  0%, 100% {
+    transform: scale(1) translateY(0px);
+  }
+  50% {
+    transform: scale(1.025, 1.045) translateY(-5px);
+  }
 }
 
-@keyframes meteorStreak {
-  0% { transform: translate(-200px, -200px) rotate(45deg) scale(0.6); opacity: 0; }
-  30% { opacity: 1; }
-  85% { transform: translate(120px, 120px) rotate(45deg) scale(1.1); opacity: 1; }
-  100% { transform: translate(160px, 160px) rotate(45deg) scale(1.3); opacity: 0; }
+@keyframes runeSpin {
+  0% { transform: rotateX(60deg) rotateZ(0deg); }
+  100% { transform: rotateX(60deg) rotateZ(360deg); }
+}
+
+@keyframes elementalGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px var(--glow-color, rgba(245, 158, 11, 0.4)));
+  }
+  50% {
+    filter: drop-shadow(0 0 28px var(--glow-color, rgba(245, 158, 11, 0.85)));
+  }
 }
 
 .animate-float {
   animation: floatAnim 4s ease-in-out infinite;
 }
 
-.animate-meteor {
-  animation: meteorStreak 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+.animate-creature-breathe {
+  animation: monsterBreathe 3.2s ease-in-out infinite;
+}
+
+.animate-rune-spin {
+  animation: runeSpin 16s linear infinite;
+}
+
+.animate-elemental-glow {
+  animation: elementalGlow 2.5s ease-in-out infinite;
 }

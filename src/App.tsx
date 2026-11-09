@@ -9,6 +9,7 @@ import { OriginalAttacksViewer } from './components/OriginalAttacksViewer';
 import { BreedingModal } from './components/BreedingModal';
 import { HatcheryModal } from './components/HatcheryModal';
 import { FarmModal } from './components/FarmModal';
+import { BottomNav } from './components/BottomNav';
 import { sound } from './services/soundEffects';
 
 export default function App() {
@@ -142,8 +143,15 @@ export default function App() {
         />
       )}
 
+      {/* Mobile Bottom Navigation Dock */}
+      <BottomNav
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        monsterCount={playerState.monsters.length}
+      />
+
       {/* Footer / Status Note */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-3 px-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-900 bg-slate-950 py-3 px-4 text-center text-xs text-slate-500 mb-16 md:mb-0">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>MONSTERR Offline Engine · محاكي Monster Legends الكامل</span>
           <span>حفظ تلقائي للملفات محلياً (Offline Storage Active)</span>

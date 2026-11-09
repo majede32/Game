@@ -1,4 +1,4 @@
-import { BattleStage, ElementType, Monster, MonsterSkill } from '../types/game';
+import { BattleStage, ElementType, EvolutionStage, Monster, MonsterSkill } from '../types/game';
 
 // Elemental type advantages (Attacker -> Defender)
 export const ELEMENT_ADVANTAGES: Record<ElementType, ElementType[]> = {
@@ -371,19 +371,90 @@ export const SPECIES_CATALOG: Record<string, {
   },
 };
 
-export function createMonsterInstance(speciesId: string, level: number = 10): Monster {
+export interface EvolutionStageInfo {
+  stage: EvolutionStage;
+  titleAr: string;
+  minLevel: number;
+  badgeColor: string;
+  glowColor: string;
+  multiplier: number;
+  descriptionAr: string;
+}
+
+export const EVOLUTION_STAGES_INFO: Record<EvolutionStage, EvolutionStageInfo> = {
+  baby: {
+    stage: 'baby',
+    titleAr: 'طور الصغير (Baby)',
+    minLevel: 1,
+    badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    glowColor: 'rgba(52, 211, 153, 0.4)',
+    multiplier: 1.0,
+    descriptionAr: 'كائن وليد مليء بالطاقة والنشاط، يكتشف قدراته الأولية.',
+  },
+  juvenile: {
+    stage: 'juvenile',
+    titleAr: 'طور اليافع (Juvenile)',
+    minLevel: 10,
+    badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    glowColor: 'rgba(59, 130, 246, 0.5)',
+    multiplier: 1.4,
+    descriptionAr: 'اشتداد مخالب وقرون الوحش وفتح مهارات هجومية متقدمة (+40% قوة).',
+  },
+  adult: {
+    stage: 'adult',
+    titleAr: 'طور العملاق الناضج (Adult Titan)',
+    minLevel: 20,
+    badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    glowColor: 'rgba(245, 158, 11, 0.6)',
+    multiplier: 2.0,
+    descriptionAr: 'بلوغ القوة الكاملة واكتساب المهارة الخارقة (Ultimate Special) المدمرة.',
+  },
+  ascended: {
+    stage: 'ascended',
+    titleAr: 'طور التحول المتسامي الأسطوري (Mythic Ascended)',
+    minLevel: 35,
+    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    glowColor: 'rgba(168, 85, 247, 0.8)',
+    multiplier: 3.2,
+    descriptionAr: 'تسامي أسطوري يمنح الوحش هالة ضوئية مضاعفة وأعلى قدرات تدميرية.',
+  },
+};
+
+export function createMonsterInstance(speciesId: string, level: number = 10, stars: number = 1): Monster {
   const spec = SPECIES_CATALOG[speciesId] || SPECIES_CATALOG.pyrodrake;
-  const hpMultiplier = 1 + (level - 1) * 0.14;
-  const statMultiplier = 1 + (level - 1) * 0.12;
+  const hpMultiplier = 1 + (level - 1) * 0.14 + (stars - 1) * 0.15;
+  const statMultiplier = 1 + (level - 1) * 0.12 + (stars - 1) * 0.15;
+
+  let stage: EvolutionStage = 'baby';
+  let canEvolve = false;
+  let evolutionMilestone: 10 | 20 | 35 | undefined = undefined;
+
+  if (level >= 35) {
+    stage = 'ascended';
+  } else if (level >= 20) {
+    stage = 'adult';
+    if (level === 20) {
+      canEvolve = true;
+      evolutionMilestone = 35;
+    }
+  } else if (level >= 10) {
+    stage = 'juvenile';
+    if (level === 10) {
+      canEvolve = true;
+      evolutionMilestone = 20;
+    }
+  } else {
+    stage = 'baby';
+    if (level === 9) {
+      canEvolve = true;
+      evolutionMilestone = 10;
+    }
+  }
 
   const maxHp = Math.round(spec.baseHp * hpMultiplier);
   const attack = Math.round(spec.baseAttack * statMultiplier);
   const defense = Math.round(spec.baseDefense * statMultiplier);
-  const speed = Math.round(spec.baseSpeed * (1 + (level - 1) * 0.03));
-
-  let stage: 'baby' | 'juvenile' | 'adult' = 'baby';
-  if (level >= 20) stage = 'adult';
-  else if (level >= 10) stage = 'juvenile';
+  const speed = Math.round(spec.baseSpeed * (1 + (level - 1) * 0.03 + (stars - 1) * 0.05));
 
   return {
     id: `m_${speciesId}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -396,6 +467,9 @@ export function createMonsterInstance(speciesId: string, level: number = 10): Mo
     xp: 0,
     maxXp: level * 100,
     stage,
+    stars,
+    canEvolve,
+    evolutionMilestone,
     maxHp,
     currentHp: maxHp,
     attack,
@@ -405,7 +479,7 @@ export function createMonsterInstance(speciesId: string, level: number = 10): Mo
     maxStamina: 100,
     avatar: spec.avatar,
     skills: JSON.parse(JSON.stringify(spec.skills)),
-    goldPerHour: Math.round(spec.goldRate * (1 + (level - 1) * 0.2)),
+    goldPerHour: Math.round(spec.goldRate * (1 + (level - 1) * 0.2 + (stars - 1) * 0.25)),
   };
 }
 

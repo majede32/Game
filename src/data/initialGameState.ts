@@ -157,6 +157,23 @@ export function loadSavedGameState(): PlayerState {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.monsters && parsed.buildings) {
+        parsed.monsters = parsed.monsters.map((m: Monster) => {
+          const stars = m.stars || 1;
+          let stage = m.stage;
+          if (!stage) {
+            if (m.level >= 35) stage = 'ascended';
+            else if (m.level >= 20) stage = 'adult';
+            else if (m.level >= 10) stage = 'juvenile';
+            else stage = 'baby';
+          }
+          const canEvolve = (m.level === 9 && stage === 'baby') || (m.level === 19 && stage === 'juvenile') || (m.level === 34 && stage === 'adult');
+          return {
+            ...m,
+            stars,
+            stage,
+            canEvolve: m.canEvolve ?? canEvolve,
+          };
+        });
         return parsed;
       }
     }

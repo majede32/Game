@@ -17,6 +17,8 @@ export interface MonsterSkill {
   animationKey: 'attack_meteor_special' | 'attack_earth_shatter' | 'attack_physical_claws_fire' | 'attack_dark_bloodplague' | 'attack_water_surge' | 'attack_heal_bloom' | 'attack_physical_strike';
 }
 
+export type EvolutionStage = 'baby' | 'juvenile' | 'adult' | 'ascended';
+
 export interface Monster {
   id: string;
   speciesId: string;
@@ -27,7 +29,8 @@ export interface Monster {
   level: number;
   xp: number;
   maxXp: number;
-  stage: 'baby' | 'juvenile' | 'adult';
+  stage: EvolutionStage;
+  stars: number; // 1 to 5 stars
   maxHp: number;
   currentHp: number;
   attack: number;
@@ -38,7 +41,10 @@ export interface Monster {
   avatar: string;
   habitatId?: string;
   skills: MonsterSkill[];
+  unlockedSkillIds?: string[];
   goldPerHour: number;
+  canEvolve?: boolean;
+  evolutionMilestone?: 10 | 20 | 35;
 }
 
 export type BuildingType = 'habitat' | 'breeding' | 'hatchery' | 'farm' | 'storage' | 'lab';
