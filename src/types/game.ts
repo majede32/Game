@@ -14,7 +14,16 @@ export interface MonsterSkill {
   descriptionAr: string;
   effectType?: 'damage' | 'heal' | 'burn' | 'stun' | 'bleed' | 'drain' | 'buff' | 'shield';
   effectValue?: number;
-  animationKey: 'attack_meteor_special' | 'attack_earth_shatter' | 'attack_physical_claws_fire' | 'attack_dark_bloodplague' | 'attack_water_surge' | 'attack_heal_bloom' | 'attack_physical_strike';
+  animationKey:
+    | 'attack_meteor_special'
+    | 'attack_earth_shatter'
+    | 'attack_physical_claws_fire'
+    | 'attack_dark_bloodplague'
+    | 'attack_water_surge'
+    | 'attack_heal_bloom'
+    | 'attack_physical_strike'
+    | 'attack_thunder_strike'
+    | 'attack_nature_vines';
 }
 
 export type EvolutionStage = 'baby' | 'juvenile' | 'adult' | 'ascended';
@@ -45,6 +54,8 @@ export interface Monster {
   goldPerHour: number;
   canEvolve?: boolean;
   evolutionMilestone?: 10 | 20 | 35;
+  isLevelLocked?: boolean;
+  lockedReasonAr?: string;
 }
 
 export type BuildingType = 'habitat' | 'breeding' | 'hatchery' | 'farm' | 'storage' | 'lab';
@@ -67,6 +78,8 @@ export interface IslandBuilding {
   // For Farm
   currentCrop?: string;
   harvestReadyAt?: number; // timestamp
+  plantedAt?: number;
+  growthDurationSeconds?: number;
   cropYield?: number;
   // For Breeding
   parent1Id?: string;
@@ -119,7 +132,7 @@ export interface BattleStage {
   id: number;
   nameAr: string;
   subtitle: string;
-  difficulty: 'سهل' | 'متوسط' | 'صعب' | 'زعيم';
+  difficulty: 'سهل' | 'متوسط' | 'صعب' | 'خبير' | 'أسطوري' | 'زعيم';
   recommendedLevel: number;
   enemies: {
     speciesId: string;

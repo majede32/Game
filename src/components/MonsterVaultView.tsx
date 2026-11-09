@@ -40,15 +40,47 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
   const activeMonster =
     playerState.monsters.find((m) => m.id === activeMonsterId) || playerState.monsters[0];
 
-  // Feed monster by amount of levels
-  const feedMonster = (monster: Monster, levelsToAdd: number = 1) => {
+  // Get max level permissible for the current evolution stage
+  const getStageMaxLevel = (stage: EvolutionStage): number => {
+    switch (stage) {
+      case 'baby':
+        return 10;
+      case 'juvenile':
+        return 20;
+      case 'adult':
+        return 35;
+      case 'ascended':
+        return 50;
+      default:
+        return 50;
+    }
+  };
+
+  // Feed monster by amount of levels with strict stage capping
+  const feedMonster = (monster: Monster, desiredLevels: number = 1) => {
+    const stageMax = getStageMaxLevel(monster.stage);
+
+    if (monster.level >= stageMax) {
+      alert(
+        `بلغ ${monster.nameAr} الحد الأقصى للمستوى في ${
+          EVOLUTION_STAGES_INFO[monster.stage].titleAr
+        } (المستوى ${stageMax})!\nيجب إجراء مراسم الارتقاء (Evolution) أولاً لفتح مستويات الطور التالي.`
+      );
+      setEvolvingMonster(monster);
+      return;
+    }
+
+    // Clamp levels to not exceed the stage evolution cap
+    const levelsToAdd = Math.min(desiredLevels, stageMax - monster.level);
+    if (levelsToAdd <= 0) return;
+
     let totalFoodCost = 0;
     for (let i = 0; i < levelsToAdd; i++) {
       totalFoodCost += (monster.level + i) * 45;
     }
 
     if (playerState.food < totalFoodCost) {
-      alert(`تحتاج إلى ${totalFoodCost} طعام لإطعام هذا الوحش! ازرع المحاصيل في المزرعة.`);
+      alert(`تحتاج إلى ${totalFoodCost} طعام لإطعام هذا الوحش! ازرع المحاصيل في المزرعة أولاً.`);
       return;
     }
 
@@ -57,25 +89,18 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
     setTimeout(() => setLevelUpEffect(false), 900);
 
     const newLevel = monster.level + levelsToAdd;
-    let newStage = monster.stage;
-    let canEvolve = monster.canEvolve;
-
-    // Check if evolution unlocked
-    if (newLevel >= 35 && monster.stage !== 'ascended') {
-      canEvolve = true;
-    } else if (newLevel >= 20 && monster.stage === 'juvenile') {
-      canEvolve = true;
-    } else if (newLevel >= 10 && monster.stage === 'baby') {
-      canEvolve = true;
-    }
+    const isNowAtStageCap = newLevel >= stageMax;
 
     const updatedMonsters = playerState.monsters.map((m) => {
       if (m.id === monster.id) {
         return {
           ...m,
           level: newLevel,
-          stage: newStage,
-          canEvolve,
+          canEvolve: isNowAtStageCap || m.canEvolve,
+          isLevelLocked: isNowAtStageCap,
+          lockedReasonAr: isNowAtStageCap
+            ? `بلغ المستوى ${stageMax}. الارتقاء مطلوب لمتابعة رفع المستوى.`
+            : undefined,
           maxHp: Math.round(m.maxHp * (1 + 0.08 * levelsToAdd)),
           currentHp: Math.round(m.maxHp * (1 + 0.08 * levelsToAdd)),
           attack: Math.round(m.attack * (1 + 0.07 * levelsToAdd)),
@@ -93,6 +118,16 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
       xp: playerState.xp + 40 * levelsToAdd,
       monsters: updatedMonsters,
     });
+
+    if (isNowAtStageCap) {
+      setTimeout(() => {
+        alert(
+          `مبروك! بلغ ${monster.nameAr} المستوى ${stageMax} وأصبح جاهزاً للارتقاء إلى الطور التالي!`
+        );
+        const evolvedRef = updatedMonsters.find((m) => m.id === monster.id);
+        if (evolvedRef) setEvolvingMonster(evolvedRef);
+      }, 500);
+    }
   };
 
   const filteredMonsters = playerState.monsters.filter((m) => {

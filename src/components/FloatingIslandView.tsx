@@ -21,6 +21,8 @@ import {
   Mountain,
   Moon,
   Warehouse,
+  Zap,
+  Sprout,
 } from 'lucide-react';
 
 interface FloatingIslandViewProps {
@@ -115,9 +117,14 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
 
   // Upgrade building
   const upgradeBuilding = (building: IslandBuilding) => {
+    if (building.level >= building.maxLevel) {
+      alert(`بلغ مبنى ${building.nameAr} الحد الأقصى للمستوى (${building.maxLevel}) بالفعل!`);
+      return;
+    }
+
     const cost = building.level * 1200;
     if (playerState.gold < cost) {
-      alert('لا يوجد ذهب كافٍ لترقية هذا المبنى!');
+      alert(`لا يوجد ذهب كافٍ لترقية هذا المبنى! تحتاج إلى ${cost} ذهب.`);
       return;
     }
 
@@ -126,7 +133,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
       if (b.id === building.id) {
         return {
           ...b,
-          level: b.level + 1,
+          level: Math.min(b.maxLevel, b.level + 1),
           maxGoldCapacity: b.maxGoldCapacity ? Math.round(b.maxGoldCapacity * 1.5) : undefined,
           maxMonsters: b.maxMonsters ? b.maxMonsters + 1 : undefined,
         };
@@ -187,6 +194,8 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
     if (element === 'water') return <Droplets className="w-5 h-5 text-blue-400" />;
     if (element === 'earth') return <Mountain className="w-5 h-5 text-amber-500" />;
     if (element === 'dark') return <Moon className="w-5 h-5 text-purple-400" />;
+    if (element === 'nature') return <Sprout className="w-5 h-5 text-emerald-400" />;
+    if (element === 'thunder') return <Zap className="w-5 h-5 text-yellow-400" />;
     return <Home className="w-5 h-5 text-amber-400" />;
   };
 
@@ -196,19 +205,23 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
       case 'b_breeding':
         return { x: 50, y: 16, shortName: 'التزاوج' };
       case 'b_farm_1':
-        return { x: 22, y: 22, shortName: 'المزرعة' };
+        return { x: 18, y: 22, shortName: 'المزرعة' };
       case 'b_hatchery':
-        return { x: 80, y: 24, shortName: 'الحاضنة' };
+        return { x: 82, y: 22, shortName: 'الحاضنة' };
+      case 'b_habitat_nature':
+        return { x: 30, y: 34, shortName: 'موطن الطبيعة' };
+      case 'b_habitat_thunder':
+        return { x: 70, y: 34, shortName: 'موطن الرعد' };
       case 'b_habitat_fire':
-        return { x: 22, y: 46, shortName: 'موطن النار' };
+        return { x: 20, y: 48, shortName: 'موطن النار' };
       case 'b_habitat_earth':
-        return { x: 50, y: 44, shortName: 'موطن الأرض' };
+        return { x: 50, y: 46, shortName: 'موطن الأرض' };
       case 'b_habitat_dark':
-        return { x: 78, y: 50, shortName: 'موطن الظلام' };
+        return { x: 80, y: 50, shortName: 'موطن الظلام' };
       case 'b_habitat_water':
-        return { x: 36, y: 74, shortName: 'موطن الماء' };
+        return { x: 34, y: 75, shortName: 'موطن الماء' };
       case 'b_storage':
-        return { x: 72, y: 74, shortName: 'الخزينة' };
+        return { x: 70, y: 75, shortName: 'الخزينة' };
       default:
         return { x: 50, y: 50, shortName: 'مبنى' };
     }
@@ -471,7 +484,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                   {b.type === 'habitat' && hasGold && (
                     <button
                       onClick={() => collectGold(b)}
-                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow-xs"
+                      className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95"
                     >
                       جمع الذهب (+{b.goldAccumulated})
                     </button>
@@ -479,7 +492,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                   {b.type === 'farm' && (
                     <button
                       onClick={() => onOpenFarm(b.id)}
-                      className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                      className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95"
                     >
                       {hasFood ? `حصاد (+${b.foodAccumulated})` : 'زراعة محاصيل'}
                     </button>
@@ -487,7 +500,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                   {b.type === 'breeding' && (
                     <button
                       onClick={onOpenBreeding}
-                      className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                      className="flex-1 py-1.5 bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95"
                     >
                       بدء التزاوج
                     </button>
@@ -495,18 +508,23 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                   {b.type === 'hatchery' && (
                     <button
                       onClick={onOpenHatchery}
-                      className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg shadow-xs"
+                      className="flex-1 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg shadow-xs transition-transform active:scale-95"
                     >
                       فحص البيض
                     </button>
                   )}
-                  {b.level < b.maxLevel && (
+                  {b.level < b.maxLevel ? (
                     <button
                       onClick={() => upgradeBuilding(b)}
-                      className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-lg"
+                      className="py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-lg transition-transform active:scale-95"
                     >
                       ترقية ({b.level * 1200} ذهب)
                     </button>
+                  ) : (
+                    <span className="py-1 px-2.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black text-[11px] rounded-lg flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      الحد الأقصى (MAX)
+                    </span>
                   )}
                 </div>
               </div>
@@ -532,7 +550,7 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                 <div className="flex items-center gap-2">
                   <h4 className="text-base font-black text-white">{selectedBuilding.nameAr}</h4>
                   <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-                    المستوى {selectedBuilding.level}
+                    المستوى {selectedBuilding.level} / {selectedBuilding.maxLevel}
                   </span>
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">
@@ -580,13 +598,18 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
                   زراعة المحاصيل
                 </button>
               )}
-              {selectedBuilding.level < selectedBuilding.maxLevel && (
+              {selectedBuilding.level < selectedBuilding.maxLevel ? (
                 <button
                   onClick={() => upgradeBuilding(selectedBuilding)}
                   className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs rounded-xl"
                 >
                   ترقية ({selectedBuilding.level * 1200} ذهب)
                 </button>
+              ) : (
+                <span className="px-3 py-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 font-black text-xs rounded-xl flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  الحد الأقصى (MAX)
+                </span>
               )}
               <button
                 onClick={() => setSelectedBuilding(null)}
@@ -598,6 +621,85 @@ export const FloatingIslandView: React.FC<FloatingIslandViewProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* QUICK ACTIONS & ISLAND PRODUCTION SUMMARY SHELF (Eliminates mobile blank space) */}
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-3.5 md:p-4 shadow-xl flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs md:text-sm font-extrabold text-white">
+              لوحة التحكم السريع بالجزيرة
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-400 font-medium">
+            {playerState.buildings.length} مبانٍ نشطة · {playerState.monsters.length} وحوش
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {/* Quick Breeding Shortcut */}
+          <button
+            onClick={onOpenBreeding}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-pink-500/40 text-right transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-pink-500/15 border border-pink-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Heart className="w-4 h-4 text-pink-400" />
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-white truncate">جبل التزاوج</div>
+              <div className="text-[10px] text-pink-400 font-medium truncate">تزاوج وحوش جديدة</div>
+            </div>
+          </button>
+
+          {/* Quick Hatchery Shortcut */}
+          <button
+            onClick={onOpenHatchery}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-purple-500/40 text-right transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Egg className="w-4 h-4 text-purple-400" />
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-white truncate">حاضنة البيض</div>
+              <div className="text-[10px] text-purple-400 font-medium truncate">
+                {playerState.eggsInHatchery.length > 0
+                  ? `${playerState.eggsInHatchery.length} بيضة قيد الفقس`
+                  : 'فارغة'}
+              </div>
+            </div>
+          </button>
+
+          {/* Quick Farm Shortcut */}
+          <button
+            onClick={() => onOpenFarm('b_farm_1')}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-emerald-500/40 text-right transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Wheat className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-white truncate">مزارع الغذاء</div>
+              <div className="text-[10px] text-emerald-400 font-medium truncate">حصاد وزراعة</div>
+            </div>
+          </button>
+
+          {/* Quick Vault Shortcut */}
+          <button
+            onClick={() => onOpenMonsterVault()}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-amber-500/40 text-right transition-all group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Home className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-xs font-bold text-white truncate">عرين الوحوش</div>
+              <div className="text-[10px] text-amber-400 font-medium truncate">
+                {playerState.monsters.length} وحش متاح
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

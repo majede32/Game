@@ -239,6 +239,69 @@ class SoundEngine {
     });
   }
 
+  public playThunder() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    // High-pitch electric crackle
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1400, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.25);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.35);
+
+    // Deep thunder rumble
+    setTimeout(() => {
+      if (!this.ctx || this.isMuted) return;
+      const tNow = this.ctx.currentTime;
+      const rumble = this.ctx.createOscillator();
+      const rumbleGain = this.ctx.createGain();
+      rumble.type = 'sine';
+      rumble.frequency.setValueAtTime(95, tNow);
+      rumble.frequency.exponentialRampToValueAtTime(30, tNow + 0.5);
+
+      rumbleGain.gain.setValueAtTime(0.4, tNow);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.001, tNow + 0.55);
+
+      rumble.connect(rumbleGain);
+      rumbleGain.connect(this.ctx.destination);
+      rumble.start(tNow);
+      rumble.stop(tNow + 0.55);
+    }, 80);
+  }
+
+  public playVineWhip() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(450, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.15);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+
   public playVictory() {
     if (this.isMuted) return;
     this.initCtx();

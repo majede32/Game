@@ -9,6 +9,8 @@ import { OriginalAttacksViewer } from './components/OriginalAttacksViewer';
 import { BreedingModal } from './components/BreedingModal';
 import { HatcheryModal } from './components/HatcheryModal';
 import { FarmModal } from './components/FarmModal';
+import { BackupModal } from './components/BackupModal';
+import { DailyQuestsModal } from './components/DailyQuestsModal';
 import { BottomNav } from './components/BottomNav';
 import { sound } from './services/soundEffects';
 
@@ -22,6 +24,8 @@ export default function App() {
   const [showHatchery, setShowHatchery] = useState<boolean>(false);
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [selectedVaultMonsterId, setSelectedVaultMonsterId] = useState<string | undefined>(undefined);
+  const [showBackup, setShowBackup] = useState<boolean>(false);
+  const [showQuests, setShowQuests] = useState<boolean>(false);
 
   // Automatically save state on change
   useEffect(() => {
@@ -72,6 +76,8 @@ export default function App() {
         onSelectTab={(tab) => setActiveTab(tab)}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
+        onOpenQuests={() => setShowQuests(true)}
+        onOpenBackup={() => setShowBackup(true)}
       />
 
       {/* Main Viewport Content */}
@@ -140,6 +146,28 @@ export default function App() {
           onUpdateState={(updatedState) => {
             handleUpdatePlayerState(updatedState);
           }}
+        />
+      )}
+
+      {/* Daily Quests Modal */}
+      {showQuests && (
+        <DailyQuestsModal
+          playerState={playerState}
+          onClaimReward={(updatedState) => {
+            handleUpdatePlayerState(updatedState);
+          }}
+          onClose={() => setShowQuests(false)}
+        />
+      )}
+
+      {/* Backup and State Migration Modal */}
+      {showBackup && (
+        <BackupModal
+          playerState={playerState}
+          onRestoreState={(restoredState) => {
+            handleUpdatePlayerState(restoredState);
+          }}
+          onClose={() => setShowBackup(false)}
         />
       )}
 

@@ -30,6 +30,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { MonsterBattleSprite } from './MonsterBattleSprite';
+import { BattleArena3D } from './BattleArena3D';
 
 interface BattleViewProps {
   playerState: PlayerState;
@@ -70,6 +71,7 @@ export const BattleView: React.FC<BattleViewProps> = ({
   } | null>(null);
   const [screenShake, setScreenShake] = useState<boolean>(false);
   const [battleResult, setBattleResult] = useState<'victory' | 'defeat' | null>(null);
+  const [battleMode, setBattleMode] = useState<'3d' | '2d'>('3d');
 
   // Initialize a match for the selected stage
   const startStageBattle = (stage: BattleStage) => {
@@ -136,7 +138,7 @@ export const BattleView: React.FC<BattleViewProps> = ({
     }, 1200 / battleSpeed);
   };
 
-  // Turn execution
+  // Turn execution with 100% Immutable State Updates
   const executeSkill = (
     attacker: BattleMonster,
     skill: MonsterSkill,
@@ -149,11 +151,6 @@ export const BattleView: React.FC<BattleViewProps> = ({
       addFloatingText(attacker.monster.id, 'طاقة غير كافية!', 'text-amber-300');
       rechargeMonster(attacker);
       return;
-    }
-
-    attacker.currentStamina = Math.max(0, attacker.currentStamina - skill.staminaCost);
-    if (skill.cooldown > 0) {
-      attacker.skillCooldowns[skill.id] = skill.cooldown;
     }
 
     // Play attack sound & vfx
@@ -186,6 +183,12 @@ export const BattleView: React.FC<BattleViewProps> = ({
       sound.playFireClaws();
     } else if (skill.animationKey === 'attack_dark_bloodplague') {
       sound.playDarkPlague();
+    } else if (skill.animationKey === 'attack_thunder_strike') {
+      sound.playThunder();
+      setScreenShake(true);
+      setTimeout(() => setScreenShake(false), 350 / battleSpeed);
+    } else if (skill.animationKey === 'attack_nature_vines') {
+      sound.playVineWhip();
     } else if (skill.animationKey === 'attack_heal_bloom') {
       sound.playHeal();
     } else {
@@ -198,110 +201,247 @@ export const BattleView: React.FC<BattleViewProps> = ({
       ...prev.slice(0, 8),
     ]);
 
+    // Compute updated attacker state immutably
+    const newAttackerStamina = Math.max(0, attacker.currentStamina - skill.staminaCost);
+    const newAttackerCooldowns = {
+      ...attacker.skillCooldowns,
+      ...(skill.cooldown > 0 ? { [skill.id]: skill.cooldown } : {}),
+    };
+
     // Handle Healing
     if (skill.effectType === 'heal') {
-      const allies = attacker.isAi ? enemyMonsters : playerMonsters;
-      allies.forEach((ally) => {
-        if (!ally.isDefeated) {
-          const healAmount = Math.round(
-            (skill.effectValue || 200) * (1 + attacker.monster.attack * 0.005)
-          );
-          ally.currentHp = Math.min(ally.monster.maxHp, ally.currentHp + healAmount);
-          addFloatingText(ally.monster.id, `+${healAmount} شفاء`, 'text-emerald-400');
-        }
-      });
-      advanceTurn();
+      const healAmount = Math.round(
+        (skill.effectValue || 200) * (1 + attacker.monster.attack * 0.005)
+      );
+
+      const updateHealTeam = (team: BattleMonster[]) =>
+        team.map((bm) => {
+          if (bm.monster.id === attacker.monster.id) {
+            const healedHp = Math.min(bm.monster.maxHp, bm.currentHp + healAmount);
+            addFloatingText(bm.monster.id, `+${healAmount} شفاء`, 'text-emerald-400');
+            return {
+              ...bm,
+              currentHp: healedHp,
+              currentStamina: newAttackerStamina,
+              skillCooldowns: newAttackerCooldowns,
+            };
+          }
+          if (!bm.isDefeated) {
+            const healedHp = Math.min(bm.monster.maxHp, bm.currentHp + healAmount);
+            addFloatingText(bm.monster.id, `+${healAmount} شفاء`, 'text-emerald-400');
+            return { ...bm, currentHp: healedHp };
+          }
+          return bm;
+        });
+
+      if (attacker.isAi) {
+        setEnemyMonsters(updateHealTeam);
+      } else {
+        setPlayerMonsters(updateHealTeam);
+      }
+
+      setTimeout(() => {
+        setActiveVfx(null);
+        advanceTurn();
+      }, 600 / battleSpeed);
       return;
     }
 
     // Handle Shield/Buff
     if (skill.effectType === 'shield') {
-      attacker.statusEffects.push({
-        type: 'shield',
-        duration: 2,
-        value: skill.effectValue || 200,
-      });
       addFloatingText(attacker.monster.id, `درع منيع!`, 'text-blue-300');
-      advanceTurn();
+
+      const updateShieldTeam = (team: BattleMonster[]): BattleMonster[] =>
+        team.map((bm) =>
+          bm.monster.id === attacker.monster.id
+            ? {
+                ...bm,
+                currentStamina: newAttackerStamina,
+                skillCooldowns: newAttackerCooldowns,
+                statusEffects: [
+                  ...bm.statusEffects.filter((ef) => ef.type !== 'shield'),
+                  { type: 'shield' as const, duration: 2, value: skill.effectValue || 220 },
+                ],
+              }
+            : bm
+        );
+
+      if (attacker.isAi) {
+        setEnemyMonsters(updateShieldTeam);
+      } else {
+        setPlayerMonsters(updateShieldTeam);
+      }
+
+      setTimeout(() => {
+        setActiveVfx(null);
+        advanceTurn();
+      }, 600 / battleSpeed);
       return;
     }
 
-    // Targets to damage
-    let targetsToDamage: BattleMonster[] = [];
+    // Determine target monster IDs to damage
+    const opposingTeam = attacker.isAi ? playerMonsters : enemyMonsters;
+    let targetIdsToDamage: string[] = [];
+
     if (skill.target === 'all_enemies') {
-      targetsToDamage = (attacker.isAi ? playerMonsters : enemyMonsters).filter(
-        (m) => !m.isDefeated
-      );
+      targetIdsToDamage = opposingTeam.filter((m) => !m.isDefeated).map((m) => m.monster.id);
     } else if (target && !target.isDefeated) {
-      targetsToDamage = [target];
+      targetIdsToDamage = [target.monster.id];
     } else {
-      // Pick first alive opposite
-      const opp = (attacker.isAi ? playerMonsters : enemyMonsters).filter((m) => !m.isDefeated);
-      if (opp.length > 0) targetsToDamage = [opp[0]];
+      const aliveOpponents = opposingTeam.filter((m) => !m.isDefeated);
+      if (aliveOpponents.length > 0) {
+        targetIdsToDamage = [aliveOpponents[0].monster.id];
+      }
     }
 
-    targetsToDamage.forEach((t) => {
-      // Calculate elemental multiplier
+    // Calculate damage & effects per target
+    let totalDrainHp = 0;
+    const targetDamageMap: Record<
+      string,
+      {
+        finalDamage: number;
+        isCrit: boolean;
+        isDefeated: boolean;
+        newEffects: BattleMonster['statusEffects'];
+      }
+    > = {};
+
+    targetIdsToDamage.forEach((targetId) => {
+      const t = opposingTeam.find((m) => m.monster.id === targetId);
+      if (!t) return;
+
+      // Element advantage formula
       let multiplier = 1.0;
       let isStrong = false;
       let isWeak = false;
 
       if (ELEMENT_ADVANTAGES[skill.element]?.includes(t.monster.element)) {
-        multiplier = 1.5;
+        multiplier = 1.4;
         isStrong = true;
       } else if (ELEMENT_DISADVANTAGES[skill.element]?.includes(t.monster.element)) {
-        multiplier = 0.7;
+        multiplier = 0.75;
         isWeak = true;
       }
 
-      // Base damage formula
-      const rawDamage = (attacker.monster.attack * (skill.power / 60)) / (t.monster.defense / 45);
-      const isCrit = Math.random() < 0.2;
-      const critMultiplier = isCrit ? 1.4 : 1.0;
-      const finalDamage = Math.max(
-        15,
-        Math.round(rawDamage * multiplier * critMultiplier * (0.9 + Math.random() * 0.2))
+      // Balanced Defense mitigation: Diminishing returns scaling formula
+      const defenseFactor = 100 / (100 + t.monster.defense * 0.35);
+      const baseDamage = attacker.monster.attack * (skill.power / 65) * 1.25;
+      const isCrit = Math.random() < 0.15;
+      const critMultiplier = isCrit ? 1.35 : 1.0;
+      const variance = 0.95 + Math.random() * 0.1;
+      let finalDamage = Math.max(
+        18,
+        Math.round(baseDamage * defenseFactor * multiplier * critMultiplier * variance)
       );
 
-      t.currentHp = Math.max(0, t.currentHp - finalDamage);
+      // Check Shield absorption on target
+      let updatedEffects: BattleMonster['statusEffects'] = [...t.statusEffects];
+      const shieldIndex = updatedEffects.findIndex((ef) => ef.type === 'shield');
+      if (shieldIndex !== -1) {
+        const shieldVal = updatedEffects[shieldIndex].value;
+        if (shieldVal >= finalDamage) {
+          updatedEffects[shieldIndex] = {
+            ...updatedEffects[shieldIndex],
+            value: shieldVal - finalDamage,
+          };
+          addFloatingText(t.monster.id, `امتص الدرع ${finalDamage}!`, 'text-blue-300');
+          finalDamage = 0;
+        } else {
+          finalDamage -= shieldVal;
+          updatedEffects = updatedEffects.filter((_, idx) => idx !== shieldIndex);
+          addFloatingText(t.monster.id, 'انكسر الدرع!', 'text-blue-400');
+        }
+      }
 
-      const label = isCrit
-        ? `-${finalDamage} قاضية!`
-        : isStrong
-        ? `-${finalDamage} فتاك!`
-        : isWeak
-        ? `-${finalDamage} ضعيف`
-        : `-${finalDamage}`;
+      const newHp = Math.max(0, t.currentHp - finalDamage);
+      const isDefeated = newHp <= 0;
 
-      addFloatingText(
-        t.monster.id,
-        label,
-        isCrit ? 'text-yellow-300 font-extrabold' : 'text-red-400 font-bold',
-        isCrit
-      );
+      if (finalDamage > 0) {
+        const label = isCrit
+          ? `-${finalDamage} قاضية!`
+          : isStrong
+          ? `-${finalDamage} فتاك!`
+          : isWeak
+          ? `-${finalDamage} ضعيف`
+          : `-${finalDamage}`;
 
-      // Check defeat
-      if (t.currentHp <= 0) {
-        t.isDefeated = true;
+        addFloatingText(
+          t.monster.id,
+          label,
+          isCrit ? 'text-yellow-300 font-extrabold' : 'text-red-400 font-bold',
+          isCrit
+        );
+      }
+
+      if (isDefeated) {
         setBattleLog((prev) => [
           `سقط ${t.monster.nameAr} في المعركة!`,
           ...prev.slice(0, 8),
         ]);
       }
 
-      // Status effect applications
-      if (skill.effectType === 'burn' && Math.random() < 0.8) {
-        t.statusEffects.push({ type: 'burn', duration: 2, value: 45 });
+      // Additional status effects
+      if (skill.effectType === 'burn' && Math.random() < 0.75) {
+        updatedEffects.push({ type: 'burn' as const, duration: 2, value: 40 });
         addFloatingText(t.monster.id, 'حرق مستمر!', 'text-orange-400');
-      } else if (skill.effectType === 'stun' && Math.random() < 0.5) {
-        t.statusEffects.push({ type: 'stun', duration: 1, value: 1 });
+      } else if (skill.effectType === 'stun' && Math.random() < 0.45) {
+        updatedEffects.push({ type: 'stun' as const, duration: 1, value: 1 });
         addFloatingText(t.monster.id, 'شلل وتجميد!', 'text-yellow-400');
       } else if (skill.effectType === 'drain') {
         const drainHp = Math.round(finalDamage * 0.4);
-        attacker.currentHp = Math.min(attacker.monster.maxHp, attacker.currentHp + drainHp);
-        addFloatingText(attacker.monster.id, `+${drainHp} امتصاص`, 'text-purple-400');
+        totalDrainHp += drainHp;
       }
+
+      targetDamageMap[targetId] = {
+        finalDamage,
+        isCrit,
+        isDefeated,
+        newEffects: updatedEffects,
+      };
     });
+
+    if (totalDrainHp > 0) {
+      addFloatingText(attacker.monster.id, `+${totalDrainHp} امتصاص`, 'text-purple-400');
+    }
+
+    // Immutably apply updates to attacker team
+    const updateAttackerTeam = (team: BattleMonster[]) =>
+      team.map((bm) => {
+        if (bm.monster.id === attacker.monster.id) {
+          const drainedHp = Math.min(bm.monster.maxHp, bm.currentHp + totalDrainHp);
+          return {
+            ...bm,
+            currentHp: drainedHp,
+            currentStamina: newAttackerStamina,
+            skillCooldowns: newAttackerCooldowns,
+          };
+        }
+        return bm;
+      });
+
+    // Immutably apply updates to damaged opponent team
+    const updateOpponentTeam = (team: BattleMonster[]) =>
+      team.map((bm) => {
+        const damageInfo = targetDamageMap[bm.monster.id];
+        if (damageInfo) {
+          const newHp = Math.max(0, bm.currentHp - damageInfo.finalDamage);
+          return {
+            ...bm,
+            currentHp: newHp,
+            isDefeated: newHp <= 0,
+            statusEffects: damageInfo.newEffects,
+          };
+        }
+        return bm;
+      });
+
+    if (attacker.isAi) {
+      setEnemyMonsters(updateAttackerTeam);
+      setPlayerMonsters(updateOpponentTeam);
+    } else {
+      setPlayerMonsters(updateAttackerTeam);
+      setEnemyMonsters(updateOpponentTeam);
+    }
 
     setTimeout(() => {
       setActiveVfx(null);
@@ -309,11 +449,24 @@ export const BattleView: React.FC<BattleViewProps> = ({
     }, 600 / battleSpeed);
   };
 
+  // Recharging stamina with immutable updates
   const rechargeMonster = (monsterCombat: BattleMonster) => {
-    monsterCombat.currentStamina = Math.min(
-      monsterCombat.monster.maxStamina,
-      monsterCombat.currentStamina + 45
-    );
+    const updateRecharge = (team: BattleMonster[]) =>
+      team.map((bm) =>
+        bm.monster.id === monsterCombat.monster.id
+          ? {
+              ...bm,
+              currentStamina: Math.min(
+                bm.monster.maxStamina,
+                bm.currentStamina + 45
+              ),
+            }
+          : bm
+      );
+
+    setPlayerMonsters(updateRecharge);
+    setEnemyMonsters(updateRecharge);
+
     addFloatingText(monsterCombat.monster.id, '+45 استرجاع طاقة', 'text-cyan-400');
     setBattleLog((prev) => [
       `${monsterCombat.monster.nameAr} استعاد طاقة الاستحمال (+45)`,
@@ -322,68 +475,93 @@ export const BattleView: React.FC<BattleViewProps> = ({
     advanceTurn();
   };
 
-  // Next turn progression
+  // Next turn progression with immutable state checks
   const advanceTurn = () => {
     // Check end conditions first
-    const allEnemiesDefeated = enemyMonsters.every((m) => m.isDefeated);
-    const allPlayersDefeated = playerMonsters.every((m) => m.isDefeated);
+    setPlayerMonsters((currentPlayers) => {
+      setEnemyMonsters((currentEnemies) => {
+        const allEnemiesDefeated = currentEnemies.every((m) => m.isDefeated);
+        const allPlayersDefeated = currentPlayers.every((m) => m.isDefeated);
 
-    if (allEnemiesDefeated) {
-      sound.playVictory();
-      setBattleResult('victory');
-      handleVictoryRewards();
-      return;
-    }
-
-    if (allPlayersDefeated) {
-      setBattleResult('defeat');
-      return;
-    }
-
-    // Determine next active monster in initiative order
-    const allLiving = [...playerMonsters, ...enemyMonsters].filter((m) => !m.isDefeated);
-    if (allLiving.length === 0) return;
-
-    const currentIndex = allLiving.findIndex((m) => m.monster.id === activeTurnMonsterId);
-    const nextIndex = (currentIndex + 1) % allLiving.length;
-    const nextMonster = allLiving[nextIndex];
-
-    // Decrement skill cooldowns and process DOT
-    Object.keys(nextMonster.skillCooldowns).forEach((key) => {
-      if (nextMonster.skillCooldowns[key] > 0) {
-        nextMonster.skillCooldowns[key] -= 1;
-      }
-    });
-
-    // Check DOT burn / poison
-    nextMonster.statusEffects = nextMonster.statusEffects
-      .map((ef) => {
-        if (ef.type === 'burn' || ef.type === 'poison') {
-          nextMonster.currentHp = Math.max(0, nextMonster.currentHp - ef.value);
-          addFloatingText(nextMonster.monster.id, `-${ef.value} ضرر حرق`, 'text-orange-400');
-          if (nextMonster.currentHp <= 0) nextMonster.isDefeated = true;
+        if (allEnemiesDefeated) {
+          sound.playVictory();
+          setBattleResult('victory');
+          handleVictoryRewards();
+          return currentEnemies;
         }
-        return { ...ef, duration: ef.duration - 1 };
-      })
-      .filter((ef) => ef.duration > 0);
 
-    // Stun check
-    const isStunned = nextMonster.statusEffects.some((ef) => ef.type === 'stun');
-    if (isStunned) {
-      addFloatingText(nextMonster.monster.id, 'مجمّد هذا الدور!', 'text-yellow-400');
-      setActiveTurnMonsterId(nextMonster.monster.id);
-      setTimeout(() => advanceTurn(), 600 / battleSpeed);
-      return;
-    }
+        if (allPlayersDefeated) {
+          setBattleResult('defeat');
+          return currentEnemies;
+        }
 
-    setActiveTurnMonsterId(nextMonster.monster.id);
+        // Determine next active monster in initiative order
+        const allLiving = [...currentPlayers, ...currentEnemies].filter((m) => !m.isDefeated);
+        if (allLiving.length === 0) return currentEnemies;
 
-    // If player's turn, select their first skill & first alive target
-    if (!nextMonster.isAi) {
-      setSelectedSkill(nextMonster.monster.skills[0] || null);
-      const aliveEnemy = enemyMonsters.find((e) => !e.isDefeated);
-      if (aliveEnemy) setSelectedTargetId(aliveEnemy.monster.id);
-    }
+        const currentIndex = allLiving.findIndex((m) => m.monster.id === activeTurnMonsterId);
+        const nextIndex = (currentIndex + 1) % allLiving.length;
+        const nextMonster = allLiving[nextIndex];
+
+        // Process cooldown decrements and status effect ticks immutably
+        const tickTeam = (team: BattleMonster[]) =>
+          team.map((bm) => {
+            if (bm.monster.id === nextMonster.monster.id) {
+              const newCooldowns: Record<string, number> = {};
+              Object.entries(bm.skillCooldowns).forEach(([key, val]) => {
+                if (val > 0) newCooldowns[key] = val - 1;
+              });
+
+              let currentHp = bm.currentHp;
+              bm.statusEffects.forEach((ef) => {
+                if (ef.type === 'burn' || ef.type === 'poison') {
+                  currentHp = Math.max(0, currentHp - ef.value);
+                  addFloatingText(bm.monster.id, `-${ef.value} ضرر حرق`, 'text-orange-400');
+                }
+              });
+
+              const updatedEffects = bm.statusEffects
+                .map((ef) => ({ ...ef, duration: ef.duration - 1 }))
+                .filter((ef) => ef.duration > 0);
+
+              return {
+                ...bm,
+                currentHp,
+                isDefeated: currentHp <= 0,
+                skillCooldowns: newCooldowns,
+                statusEffects: updatedEffects,
+              };
+            }
+            return bm;
+          });
+
+        if (nextMonster.isAi) {
+          setEnemyMonsters(tickTeam);
+        } else {
+          setPlayerMonsters(tickTeam);
+        }
+
+        // Stun check
+        const isStunned = nextMonster.statusEffects.some((ef) => ef.type === 'stun');
+        if (isStunned) {
+          addFloatingText(nextMonster.monster.id, 'مجمّد هذا الدور!', 'text-yellow-400');
+          setActiveTurnMonsterId(nextMonster.monster.id);
+          setTimeout(() => advanceTurn(), 600 / battleSpeed);
+          return currentEnemies;
+        }
+
+        setActiveTurnMonsterId(nextMonster.monster.id);
+
+        if (!nextMonster.isAi) {
+          setSelectedSkill(nextMonster.monster.skills[0] || null);
+          const aliveEnemy = currentEnemies.find((e) => !e.isDefeated);
+          if (aliveEnemy) setSelectedTargetId(aliveEnemy.monster.id);
+        }
+
+        return currentEnemies;
+      });
+      return currentPlayers;
+    });
   };
 
   // AI Turn handling automatically
@@ -581,7 +759,17 @@ export const BattleView: React.FC<BattleViewProps> = ({
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {/* 3D vs 2D Battle Switcher */}
+              <button
+                onClick={() => setBattleMode(battleMode === '3d' ? '2d' : '3d')}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 to-purple-500/20 hover:from-amber-500/30 hover:to-purple-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-bold transition-all shadow-xs"
+                title="تبديل العرض بين ثلاثي الأبعاد وكلاسيكي"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>{battleMode === '3d' ? 'ساحة 3D مجسمة' : 'عرض 2D'}</span>
+              </button>
+
               {/* Auto Battle */}
               <button
                 onClick={() => setAutoBattle(!autoBattle)}
@@ -613,111 +801,132 @@ export const BattleView: React.FC<BattleViewProps> = ({
             </div>
           </div>
 
-          {/* Main Battlefield Stage */}
-          <div
-            className={`relative w-full min-h-[480px] sm:min-h-[540px] md:min-h-[620px] bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between p-3 sm:p-5 md:p-6 transition-transform ${
-              screenShake ? 'translate-x-2 -translate-y-2' : ''
-            }`}
-          >
-            {/* Arena Backdrop Image */}
+          {/* Battlefield Arena Stage (3D Real Monster Arena by Default) */}
+          {battleMode === '3d' ? (
             <div
-              className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-45 mix-blend-luminosity"
-              style={{ backgroundImage: `url('/src/assets/images/battle_arena_colosseum_1794261177610.jpg')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/80 pointer-events-none" />
-
-            {/* --- METEOR STRIKE VFX OVERLAY IN BATTLE --- */}
-            {activeVfx?.key === 'attack_meteor_special' && (
-              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.7 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-red-950/80 mix-blend-multiply"
-                />
-                <motion.div
-                  initial={{ x: -200, y: -200, scale: 0.5 }}
-                  animate={{ x: 260, y: 140, scale: 1.4 }}
-                  transition={{ duration: 0.45 / battleSpeed, ease: 'easeIn' }}
-                  className="absolute top-10 left-20 w-44 h-44 rounded-full bg-radial from-yellow-200 via-amber-500 to-red-700 shadow-[0_0_100px_rgba(239,68,68,1)] flex items-center justify-center"
-                >
-                  <Flame className="w-24 h-24 text-yellow-100 animate-spin" />
-                </motion.div>
-              </div>
-            )}
-
-            {/* --- EARTH SHATTER VFX OVERLAY IN BATTLE --- */}
-            {activeVfx?.key === 'attack_earth_shatter' && (
-              <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: '80%' }}
-                  transition={{ duration: 0.35 / battleSpeed }}
-                  className="absolute bottom-20 left-20 h-6 bg-gradient-to-r from-amber-600 via-emerald-500 to-yellow-400 blur-xs rounded-full shadow-[0_0_35px_rgba(16,185,129,0.9)]"
-                />
-              </div>
-            )}
-
-            {/* --- FIRE CLAWS VFX OVERLAY --- */}
-            {activeVfx?.key === 'attack_physical_claws_fire' && (
-              <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
-                <motion.div
-                  initial={{ scale: 0.2, opacity: 0 }}
-                  animate={{ scale: 1.8, opacity: 1 }}
-                  transition={{ duration: 0.3 / battleSpeed }}
-                  className="w-48 h-48 border-y-4 border-amber-400 -rotate-45 shadow-[0_0_40px_rgba(245,158,11,1)]"
-                />
-              </div>
-            )}
-
-            {/* --- DARK BLOODPLAGUE VFX OVERLAY --- */}
-            {activeVfx?.key === 'attack_dark_bloodplague' && (
-              <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
-                <motion.div
-                  initial={{ scale: 0.2, rotate: 0 }}
-                  animate={{ scale: 2.2, rotate: 180 }}
-                  transition={{ duration: 0.5 / battleSpeed }}
-                  className="w-44 h-44 rounded-full border-4 border-dashed border-purple-500 shadow-[0_0_60px_rgba(168,85,247,1)]"
-                />
-              </div>
-            )}
-
-            {/* Top Row: AI Opponent Team (3 Monsters standing on runic combat pedestals) */}
-            <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-6 md:gap-10 pr-2 md:pr-10 pt-2">
-              {enemyMonsters.map((bm) => (
-                <MonsterBattleSprite
-                  key={bm.monster.id}
-                  battleMonster={bm}
-                  isCurrentTurn={bm.monster.id === activeTurnMonsterId}
-                  isSelectedTarget={bm.monster.id === selectedTargetId}
-                  isAttacking={bm.monster.id === attackingMonsterId}
-                  isTakingHit={bm.monster.id === hitMonsterId}
-                  onSelect={() => setSelectedTargetId(bm.monster.id)}
-                  floatingTexts={floatingTexts.filter(
-                    (ft) => ft.targetMonsterId === bm.monster.id
-                  )}
-                />
-              ))}
+              className={`relative transition-transform ${
+                screenShake ? 'translate-x-2 -translate-y-2' : ''
+              }`}
+            >
+              <BattleArena3D
+                playerMonsters={playerMonsters}
+                enemyMonsters={enemyMonsters}
+                activeTurnMonsterId={activeTurnMonsterId}
+                selectedTargetId={selectedTargetId}
+                attackingMonsterId={attackingMonsterId}
+                hitMonsterId={hitMonsterId}
+                activeVfx={activeVfx}
+                floatingTexts={floatingTexts}
+                onSelectTarget={setSelectedTargetId}
+              />
             </div>
+          ) : (
+            /* Classic 2D Arena with Animated Sprites */
+            <div
+              className={`relative w-full min-h-[480px] sm:min-h-[540px] md:min-h-[620px] bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col justify-between p-3 sm:p-5 md:p-6 transition-transform ${
+                screenShake ? 'translate-x-2 -translate-y-2' : ''
+              }`}
+            >
+              {/* Arena Backdrop Image */}
+              <div
+                className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-45 mix-blend-luminosity"
+                style={{ backgroundImage: `url('/src/assets/images/battle_arena_colosseum_1794261177610.jpg')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/80 pointer-events-none" />
 
-            {/* Bottom Row: Player Team (3 Monsters standing on runic combat pedestals) */}
-            <div className="relative z-10 flex items-center justify-start gap-2 sm:gap-6 md:gap-10 pl-2 md:pl-10 pb-2">
-              {playerMonsters.map((bm) => (
-                <MonsterBattleSprite
-                  key={bm.monster.id}
-                  battleMonster={bm}
-                  isCurrentTurn={bm.monster.id === activeTurnMonsterId}
-                  isSelectedTarget={false}
-                  isAttacking={bm.monster.id === attackingMonsterId}
-                  isTakingHit={bm.monster.id === hitMonsterId}
-                  onSelect={() => {}}
-                  floatingTexts={floatingTexts.filter(
-                    (ft) => ft.targetMonsterId === bm.monster.id
-                  )}
-                />
-              ))}
+              {/* --- METEOR STRIKE VFX OVERLAY IN BATTLE --- */}
+              {activeVfx?.key === 'attack_meteor_special' && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.7 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute inset-0 bg-red-950/80 mix-blend-multiply"
+                  />
+                  <motion.div
+                    initial={{ x: -200, y: -200, scale: 0.5 }}
+                    animate={{ x: 260, y: 140, scale: 1.4 }}
+                    transition={{ duration: 0.45 / battleSpeed, ease: 'easeIn' }}
+                    className="absolute top-10 left-20 w-44 h-44 rounded-full bg-radial from-yellow-200 via-amber-500 to-red-700 shadow-[0_0_100px_rgba(239,68,68,1)] flex items-center justify-center"
+                  >
+                    <Flame className="w-24 h-24 text-yellow-100 animate-spin" />
+                  </motion.div>
+                </div>
+              )}
+
+              {/* --- EARTH SHATTER VFX OVERLAY IN BATTLE --- */}
+              {activeVfx?.key === 'attack_earth_shatter' && (
+                <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: '80%' }}
+                    transition={{ duration: 0.35 / battleSpeed }}
+                    className="absolute bottom-20 left-20 h-6 bg-gradient-to-r from-amber-600 via-emerald-500 to-yellow-400 blur-xs rounded-full shadow-[0_0_35px_rgba(16,185,129,0.9)]"
+                  />
+                </div>
+              )}
+
+              {/* --- FIRE CLAWS VFX OVERLAY --- */}
+              {activeVfx?.key === 'attack_physical_claws_fire' && (
+                <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
+                  <motion.div
+                    initial={{ scale: 0.2, opacity: 0 }}
+                    animate={{ scale: 1.8, opacity: 1 }}
+                    transition={{ duration: 0.3 / battleSpeed }}
+                    className="w-48 h-48 border-y-4 border-amber-400 -rotate-45 shadow-[0_0_40px_rgba(245,158,11,1)]"
+                  />
+                </div>
+              )}
+
+              {/* --- DARK BLOODPLAGUE VFX OVERLAY --- */}
+              {activeVfx?.key === 'attack_dark_bloodplague' && (
+                <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
+                  <motion.div
+                    initial={{ scale: 0.2, rotate: 0 }}
+                    animate={{ scale: 2.2, rotate: 180 }}
+                    transition={{ duration: 0.5 / battleSpeed }}
+                    className="w-44 h-44 rounded-full border-4 border-dashed border-purple-500 shadow-[0_0_60px_rgba(168,85,247,1)]"
+                  />
+                </div>
+              )}
+
+              {/* Top Row: AI Opponent Team (3 Monsters standing on runic combat pedestals) */}
+              <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-6 md:gap-10 pr-2 md:pr-10 pt-2">
+                {enemyMonsters.map((bm) => (
+                  <MonsterBattleSprite
+                    key={bm.monster.id}
+                    battleMonster={bm}
+                    isCurrentTurn={bm.monster.id === activeTurnMonsterId}
+                    isSelectedTarget={bm.monster.id === selectedTargetId}
+                    isAttacking={bm.monster.id === attackingMonsterId}
+                    isTakingHit={bm.monster.id === hitMonsterId}
+                    onSelect={() => setSelectedTargetId(bm.monster.id)}
+                    floatingTexts={floatingTexts.filter(
+                      (ft) => ft.targetMonsterId === bm.monster.id
+                    )}
+                  />
+                ))}
+              </div>
+
+              {/* Bottom Row: Player Team (3 Monsters standing on runic combat pedestals) */}
+              <div className="relative z-10 flex items-center justify-start gap-2 sm:gap-6 md:gap-10 pl-2 md:pl-10 pb-2">
+                {playerMonsters.map((bm) => (
+                  <MonsterBattleSprite
+                    key={bm.monster.id}
+                    battleMonster={bm}
+                    isCurrentTurn={bm.monster.id === activeTurnMonsterId}
+                    isSelectedTarget={false}
+                    isAttacking={bm.monster.id === attackingMonsterId}
+                    isTakingHit={bm.monster.id === hitMonsterId}
+                    onSelect={() => {}}
+                    floatingTexts={floatingTexts.filter(
+                      (ft) => ft.targetMonsterId === bm.monster.id
+                    )}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Turn Action Control Deck (Shown when it's player monster's turn) */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 md:p-5 flex flex-col gap-3 shadow-xl">

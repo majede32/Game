@@ -1,6 +1,18 @@
 import React from 'react';
 import { PlayerState } from '../types/game';
-import { Coins, Wheat, Gem, Volume2, VolumeX, Swords, Home, Sparkles, Flame } from 'lucide-react';
+import {
+  Coins,
+  Wheat,
+  Gem,
+  Volume2,
+  VolumeX,
+  Swords,
+  Home,
+  Sparkles,
+  Flame,
+  Trophy,
+  Save,
+} from 'lucide-react';
 
 interface TopNavProps {
   playerState: PlayerState;
@@ -8,6 +20,8 @@ interface TopNavProps {
   onSelectTab: (tab: 'island' | 'battle' | 'monsters' | 'attacks') => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  onOpenQuests: () => void;
+  onOpenBackup: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -16,6 +30,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   onSelectTab,
   isMuted,
   onToggleMute,
+  onOpenQuests,
+  onOpenBackup,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 py-2.5">
@@ -100,6 +116,25 @@ export const TopNav: React.FC<TopNavProps> = ({
             <Gem className="w-3.5 h-3.5" />
             <span className="font-mono tabular-nums">{playerState.gems}</span>
           </div>
+
+          {/* Daily Quests button */}
+          <button
+            onClick={onOpenQuests}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs transition-colors"
+            title="المهام اليومية والإنجازات"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">المهام</span>
+          </button>
+
+          {/* Backup / Export / Import */}
+          <button
+            onClick={onOpenBackup}
+            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+            title="إدارة الحفظ والنسخ الاحتياطي"
+          >
+            <Save className="w-4 h-4 text-slate-300 hover:text-amber-400" />
+          </button>
 
           {/* Audio Mute Button */}
           <button
