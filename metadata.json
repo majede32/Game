@@ -1,0 +1,6 @@
+{
+  "name": "MONSTERR - Monster Legends Rebuild",
+  "description": "إعادة بناء لعبة MONSTERR المستوحاة من Monster Legends: جزيرة عائمة، تزاوج وفقس الوحوش، مزارع واقتصاد، ومعارك 3 ضد 3 بمؤثرات النيزك والهجمات الأصلية.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

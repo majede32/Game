@@ -1,0 +1,128 @@
+export type ElementType = 'fire' | 'earth' | 'water' | 'dark' | 'nature' | 'thunder';
+
+export interface MonsterSkill {
+  id: string;
+  name: string;
+  nameAr: string;
+  element: ElementType;
+  power: number;
+  staminaCost: number;
+  cooldown: number; // in turns
+  currentCooldown?: number;
+  target: 'single_enemy' | 'all_enemies' | 'self' | 'all_allies';
+  description: string;
+  descriptionAr: string;
+  effectType?: 'damage' | 'heal' | 'burn' | 'stun' | 'bleed' | 'drain' | 'buff' | 'shield';
+  effectValue?: number;
+  animationKey: 'attack_meteor_special' | 'attack_earth_shatter' | 'attack_physical_claws_fire' | 'attack_dark_bloodplague' | 'attack_water_surge' | 'attack_heal_bloom' | 'attack_physical_strike';
+}
+
+export interface Monster {
+  id: string;
+  speciesId: string;
+  name: string;
+  nameAr: string;
+  element: ElementType;
+  secondaryElement?: ElementType;
+  level: number;
+  xp: number;
+  maxXp: number;
+  stage: 'baby' | 'juvenile' | 'adult';
+  maxHp: number;
+  currentHp: number;
+  attack: number;
+  defense: number;
+  speed: number;
+  stamina: number;
+  maxStamina: number;
+  avatar: string;
+  habitatId?: string;
+  skills: MonsterSkill[];
+  goldPerHour: number;
+}
+
+export type BuildingType = 'habitat' | 'breeding' | 'hatchery' | 'farm' | 'storage' | 'lab';
+
+export interface IslandBuilding {
+  id: string;
+  type: BuildingType;
+  name: string;
+  nameAr: string;
+  element?: ElementType;
+  level: number;
+  maxLevel: number;
+  x: number; // percentage on island map
+  y: number; // percentage on island map
+  goldAccumulated?: number;
+  maxGoldCapacity?: number;
+  foodAccumulated?: number;
+  monsterIds: string[];
+  maxMonsters?: number;
+  // For Farm
+  currentCrop?: string;
+  harvestReadyAt?: number; // timestamp
+  cropYield?: number;
+  // For Breeding
+  parent1Id?: string;
+  parent2Id?: string;
+  breedingReadyAt?: number;
+  breedingResultEgg?: MonsterEgg;
+}
+
+export interface MonsterEgg {
+  id: string;
+  speciesId: string;
+  nameAr: string;
+  element: ElementType;
+  hatchTimeMs: number;
+  startedAt: number;
+  readyAt: number;
+  isReady: boolean;
+}
+
+export interface PlayerState {
+  playerName: string;
+  level: number;
+  xp: number;
+  maxXp: number;
+  gold: number;
+  food: number;
+  gems: number;
+  buildings: IslandBuilding[];
+  monsters: Monster[];
+  eggsInHatchery: MonsterEgg[];
+  completedStages: number;
+}
+
+export interface BattleMonster {
+  monster: Monster;
+  isAi: boolean;
+  position: number; // 0, 1, 2
+  currentHp: number;
+  currentStamina: number;
+  skillCooldowns: Record<string, number>;
+  statusEffects: {
+    type: 'burn' | 'poison' | 'stun' | 'shield' | 'attack_boost';
+    duration: number; // turns
+    value: number;
+  }[];
+  isDefeated: boolean;
+}
+
+export interface BattleStage {
+  id: number;
+  nameAr: string;
+  subtitle: string;
+  difficulty: 'سهل' | 'متوسط' | 'صعب' | 'زعيم';
+  recommendedLevel: number;
+  enemies: {
+    speciesId: string;
+    level: number;
+  }[];
+  rewards: {
+    gold: number;
+    food: number;
+    xp: number;
+    gemChance: number;
+  };
+}

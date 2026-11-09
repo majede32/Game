@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    font-family: 'Cairo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 25px rgba(239, 68, 68, 0.9)); }
+}
+
+@keyframes meteorStreak {
+  0% { transform: translate(-200px, -200px) rotate(45deg) scale(0.6); opacity: 0; }
+  30% { opacity: 1; }
+  85% { transform: translate(120px, 120px) rotate(45deg) scale(1.1); opacity: 1; }
+  100% { transform: translate(160px, 160px) rotate(45deg) scale(1.3); opacity: 0; }
+}
+
+.animate-float {
+  animation: floatAnim 4s ease-in-out infinite;
+}
+
+.animate-meteor {
+  animation: meteorStreak 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
