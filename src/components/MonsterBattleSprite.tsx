@@ -168,15 +168,31 @@ export const MonsterBattleSprite: React.FC<MonsterBattleSpriteProps> = ({
         </div>
       </div>
 
-      {/* --- MINIMALIST MONSTER HUD: NAME, HP, STAMINA --- */}
-      <div className="w-28 sm:w-36 mt-2 flex flex-col gap-1 bg-slate-950/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 text-center shadow-lg">
-        <div className="flex items-center justify-between text-[10px] font-black text-slate-200">
-          <span className="truncate">{monster.nameAr.split(' ')[0]}</span>
-          <span className="text-amber-400">Lv.{monster.level}</span>
+      {/* --- MONSTER LEGENDS STYLE COMBAT NAMEPLATE & HUD --- */}
+      <div className="w-32 sm:w-40 mt-1 flex flex-col items-center gap-1 bg-slate-950/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/80 shadow-2xl">
+        {/* Monster Legends Badge: (Rarity) Name Lvl X */}
+        <div className="flex items-center justify-center gap-1.5 text-xs font-black text-white whitespace-nowrap">
+          <span className="w-4 h-4 rounded-full bg-gradient-to-b from-amber-300 to-amber-600 text-slate-950 font-black text-[9px] flex items-center justify-center shadow-xs">
+            {monster.stars >= 3 ? 'L' : monster.stars === 2 ? 'R' : 'C'}
+          </span>
+          <span className="truncate max-w-[85px] sm:max-w-[105px]">{monster.nameAr.split(' ')[0]}</span>
+          <span className="text-amber-400 font-extrabold text-[11px]">Lvl {monster.level}</span>
         </div>
 
-        {/* Health Bar */}
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700/60">
+        {/* Element Icon Badge */}
+        <div className="flex items-center gap-1">
+          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 ${elemColor.bg} ${elemColor.text} border ${elemColor.border}`}>
+            {monster.element === 'fire' && '🔥 ناري'}
+            {monster.element === 'water' && '💧 مائي'}
+            {monster.element === 'earth' && '⛰️ أرضي'}
+            {monster.element === 'nature' && '🌿 طبيعي'}
+            {monster.element === 'thunder' && '⚡ رعدي'}
+            {monster.element === 'dark' && '🌑 ظلامي'}
+          </span>
+        </div>
+
+        {/* Health Bar with percentage */}
+        <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-700/70">
           <div
             className={`h-full rounded-full transition-all duration-300 ${
               hpPercent > 50
@@ -191,23 +207,17 @@ export const MonsterBattleSprite: React.FC<MonsterBattleSpriteProps> = ({
 
         {/* Stamina Bar (for player monsters) */}
         {!isAi && (
-          <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-cyan-400 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"
               style={{ width: `${staminaPercent}%` }}
             />
           </div>
         )}
 
-        <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
-          <span>
-            {currentHp}/{monster.maxHp} HP
-          </span>
-          <span
-            className={`text-[8px] font-bold px-1 rounded ${elemColor.bg} ${elemColor.text}`}
-          >
-            {monster.element.toUpperCase()}
-          </span>
+        <div className="w-full flex items-center justify-between text-[8px] font-mono text-slate-400 px-0.5">
+          <span>{currentHp}/{monster.maxHp} HP</span>
+          <span>{Math.round(hpPercent)}%</span>
         </div>
 
         {/* Status Effects Badges */}
@@ -216,7 +226,7 @@ export const MonsterBattleSprite: React.FC<MonsterBattleSpriteProps> = ({
             {statusEffects.map((ef, idx) => (
               <span
                 key={idx}
-                className="text-[8px] font-bold px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
               >
                 {ef.type === 'burn'
                   ? '🔥 حرق'

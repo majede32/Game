@@ -1,5 +1,5 @@
 import { IslandBuilding, Monster, PlayerState } from '../types/game';
-import { createMonsterInstance } from './monstersData';
+import { createMonsterInstance, SPECIES_CATALOG } from './monstersData';
 
 const CURRENT_VERSION = 'v2_monsterr';
 const STORAGE_KEY = `monsterr_game_state_${CURRENT_VERSION}`;
@@ -255,7 +255,7 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
           speed: Number.isFinite(m.speed) ? m.speed : 90,
           stamina: Number.isFinite(m.stamina) ? m.stamina : 100,
           maxStamina: Number.isFinite(m.maxStamina) ? m.maxStamina : 100,
-          avatar: m.avatar || '/src/assets/images/monster_fire_pyrodrake_1794261178897.jpg',
+          avatar: (SPECIES_CATALOG[m.speciesId]?.avatar) || m.avatar || '/src/assets/images/monster_fire_pyrodrake_1794261178897.jpg',
           habitatId: m.habitatId,
           skills: Array.isArray(m.skills) ? m.skills : [],
           goldPerHour: Number.isFinite(m.goldPerHour) ? m.goldPerHour : 100,

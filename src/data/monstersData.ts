@@ -378,7 +378,7 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 92,
     baseDefense: 110,
     baseSpeed: 88,
-    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%2310b981"/><stop offset="100%" stop-color="%23064e3b"/></radialGradient></defs><rect width="100" height="100" rx="20" fill="url(%23g1)"/><circle cx="50" cy="52" r="30" fill="%23047857"/><path d="M50 15 C35 25 35 45 50 45 C65 45 65 25 50 15 Z" fill="%2334d399"/><circle cx="40" cy="48" r="4.5" fill="%23fef08a"/><circle cx="60" cy="48" r="4.5" fill="%23fef08a"/><path d="M30 65 Q50 78 70 65" stroke="%23a7f3d0" stroke-width="3" fill="none"/></svg>',
+    avatar: '/src/assets/images/monster_nature_floragorgon_1794265818987.jpg',
     descriptionAr: 'كائن أسطوري حارس للغابات القديمة، يمتلك طاقة تجديد حيوية وقدرة على تطويق الأعداء بالجذور الصلبة.',
     goldRate: 135,
     skills: [
@@ -451,7 +451,7 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 128,
     baseDefense: 72,
     baseSpeed: 118,
-    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%23facc15"/><stop offset="100%" stop-color="%23854d0e"/></radialGradient></defs><rect width="100" height="100" rx="20" fill="url(%23g2)"/><path d="M50 18 L62 42 L48 42 L58 68 L36 46 L48 46 Z" fill="%23fef08a" stroke="%23ffffff" stroke-width="1.5"/><circle cx="38" cy="38" r="4" fill="%23ffffff"/><circle cx="62" cy="38" r="4" fill="%23ffffff"/></svg>',
+    avatar: '/src/assets/images/monster_thunder_voltrion_1794265831820.jpg',
     descriptionAr: 'طائر الرعد الكوني المحلق في سحب العواصف، يشحن هجماته بتيار كهربائي بمليارات الفولتات.',
     goldRate: 160,
     skills: [
@@ -523,7 +523,7 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 88,
     baseDefense: 120,
     baseSpeed: 75,
-    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%23059669"/><stop offset="100%" stop-color="%23022c22"/></radialGradient></defs><rect width="100" height="100" rx="20" fill="url(%23g3)"/><polygon points="50,15 75,55 25,55" fill="%2334d399"/><polygon points="50,35 80,80 20,80" fill="%23059669"/><rect x="42" y="75" width="16" height="20" fill="%2378350f"/><circle cx="42" cy="46" r="3.5" fill="%23fef08a"/><circle cx="58" cy="46" r="3.5" fill="%23fef08a"/></svg>',
+    avatar: '/src/assets/images/monster_nature_floragorgon_1794265818987.jpg',
     descriptionAr: 'عملاق خشبي مغطى بالطحالب وأوراق السنديان، يستمد صلابته الدفاعية من جذور الأرض المتجذرة.',
     goldRate: 130,
     skills: [
@@ -596,7 +596,7 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 118,
     baseDefense: 80,
     baseSpeed: 112,
-    avatar: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="%2338bdf8"/><stop offset="100%" stop-color="%231e3a8a"/></radialGradient></defs><rect width="100" height="100" rx="20" fill="url(%23g4)"/><circle cx="50" cy="50" r="28" fill="%230284c7"/><path d="M25 40 L45 28 L38 52 Z M75 40 L55 28 L62 52 Z" fill="%23e0f2fe"/><circle cx="40" cy="48" r="4" fill="%23fef08a"/><circle cx="60" cy="48" r="4" fill="%23fef08a"/><path d="M48 60 L50 68 L52 60 Z" fill="%23ffffff"/></svg>',
+    avatar: '/src/assets/images/monster_thunder_voltrion_1794265831820.jpg',
     descriptionAr: 'وحش ضارٍ يتغذى على شحنات البرق، تومض فرائه بالضوء الأزرق الساطع ويتحرك بسرعة تفوق سرعة الصوت.',
     goldRate: 150,
     skills: [
@@ -918,3 +918,85 @@ export const CAMPAIGN_STAGES: BattleStage[] = [
     },
   },
 ];
+
+export interface BattleArenaTheme {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  subtitleAr: string;
+  element: ElementType | 'neutral';
+  image: string;
+  ambientParticle: 'ember' | 'spore' | 'spark' | 'bubble' | 'dust';
+  overlayTint: string;
+  accentColor: string;
+}
+
+export const REALISTIC_ARENAS: BattleArenaTheme[] = [
+  {
+    id: 'desert_canyon',
+    nameAr: 'وادي الأخاديد الصخري (Grand Canyon)',
+    nameEn: 'Canyon Plateau Arena',
+    subtitleAr: 'حلبة وادي الأخاديد الأسطورية المشابهة لـ Monster Legends مع جبال حمراء وشمس دافئة',
+    element: 'earth',
+    image: '/src/assets/images/arena_desert_canyon_1794322246833.jpg',
+    ambientParticle: 'dust',
+    overlayTint: 'from-amber-950/20 via-transparent to-stone-950/60',
+    accentColor: '#d97706',
+  },
+  {
+    id: 'volcano',
+    nameAr: 'فوهة البركان المتفجرة (Caldera)',
+    nameEn: 'Molten Volcano Caldera',
+    subtitleAr: 'حمم مستعرة وصخور بركانية سوداء مع لهب متطاير وأعمدة بازلتية',
+    element: 'fire',
+    image: '/src/assets/images/arena_volcano_caldera_1794265846405.jpg',
+    ambientParticle: 'ember',
+    overlayTint: 'from-red-950/30 via-transparent to-amber-950/60',
+    accentColor: '#ef4444',
+  },
+  {
+    id: 'forest',
+    nameAr: 'غابة الأرواح المضيئة (Mystic Woods)',
+    nameEn: 'Mystic Spirit Forest',
+    subtitleAr: 'أشجار أسطورية عملاقة ونباتات مشعة وسحر الطبيعة الأخضر',
+    element: 'nature',
+    image: '/src/assets/images/arena_mystic_forest_1794265858366.jpg',
+    ambientParticle: 'spore',
+    overlayTint: 'from-emerald-950/30 via-transparent to-slate-950/60',
+    accentColor: '#10b981',
+  },
+  {
+    id: 'thunder',
+    nameAr: 'قمة العواصف الرعدية (Storm Peak)',
+    nameEn: 'Thunderstorm Mountain Peak',
+    subtitleAr: 'سماء عاصفة وصواعق مدوية فوق قمم صخرية شاهقة',
+    element: 'thunder',
+    image: '/src/assets/images/arena_thunder_peak_1794265871061.jpg',
+    ambientParticle: 'spark',
+    overlayTint: 'from-blue-950/30 via-transparent to-yellow-950/30',
+    accentColor: '#facc15',
+  },
+  {
+    id: 'abyss',
+    nameAr: 'معبد المحيط الغارق (Sunken Abyss)',
+    nameEn: 'Abyssal Ocean Temple',
+    subtitleAr: 'أعماق البحر الفيروزي وتماثيل غارقة وفقاعات متلألئة',
+    element: 'water',
+    image: '/src/assets/images/arena_abyssal_temple_1794265884907.jpg',
+    ambientParticle: 'bubble',
+    overlayTint: 'from-cyan-950/30 via-transparent to-blue-950/60',
+    accentColor: '#06b6d4',
+  },
+  {
+    id: 'colosseum',
+    nameAr: 'كولوسيوم المصارعين الإمبراطوري',
+    nameEn: 'Imperial Colosseum',
+    subtitleAr: 'ميدان القتال الكلاسيكي التاريخي المحاط بالمشاعل والجمهور',
+    element: 'neutral',
+    image: '/src/assets/images/battle_arena_colosseum_1794261177610.jpg',
+    ambientParticle: 'dust',
+    overlayTint: 'from-slate-950/30 via-transparent to-slate-950/60',
+    accentColor: '#f59e0b',
+  },
+];
+
