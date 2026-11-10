@@ -11,6 +11,7 @@ import { HatcheryModal } from './components/HatcheryModal';
 import { FarmModal } from './components/FarmModal';
 import { BackupModal } from './components/BackupModal';
 import { DailyQuestsModal } from './components/DailyQuestsModal';
+import { SummonShopModal } from './components/SummonShopModal';
 import { BottomNav } from './components/BottomNav';
 import { sound } from './services/soundEffects';
 
@@ -26,6 +27,7 @@ export default function App() {
   const [selectedVaultMonsterId, setSelectedVaultMonsterId] = useState<string | undefined>(undefined);
   const [showBackup, setShowBackup] = useState<boolean>(false);
   const [showQuests, setShowQuests] = useState<boolean>(false);
+  const [showShop, setShowShop] = useState<boolean>(false);
 
   // Automatically save state on change
   useEffect(() => {
@@ -78,6 +80,7 @@ export default function App() {
         onToggleMute={handleToggleMute}
         onOpenQuests={() => setShowQuests(true)}
         onOpenBackup={() => setShowBackup(true)}
+        onOpenShop={() => setShowShop(true)}
       />
 
       {/* Main Viewport Content */}
@@ -168,6 +171,15 @@ export default function App() {
             handleUpdatePlayerState(restoredState);
           }}
           onClose={() => setShowBackup(false)}
+        />
+      )}
+
+      {/* Monster Summoning Portal & Shop Modal */}
+      {showShop && (
+        <SummonShopModal
+          playerState={playerState}
+          onUpdatePlayerState={handleUpdatePlayerState}
+          onClose={() => setShowShop(false)}
         />
       )}
 

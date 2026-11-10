@@ -335,6 +335,106 @@ class SoundEngine {
       offset += n.t + 0.04;
     });
   }
+
+  // Ambient sound synthesizer for each realistic arena
+  private currentAmbienceGain: GainNode | null = null;
+  private currentAmbienceOsc: OscillatorNode | null = null;
+
+  public playArenaAmbience(arenaId: string) {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    this.stopArenaAmbience();
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    if (arenaId === 'volcano') {
+      // Low magma rumble
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(55, now);
+      osc.frequency.linearRampToValueAtTime(45, now + 5);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.04, now + 1);
+    } else if (arenaId === 'thunder') {
+      // Static charge & tempest drone
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(75, now);
+      osc.frequency.linearRampToValueAtTime(60, now + 3);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.035, now + 1);
+    } else if (arenaId === 'forest') {
+      // Ethereal nature shimmer
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.linearRampToValueAtTime(330, now + 4);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.02, now + 1);
+    } else if (arenaId === 'abyss') {
+      // Sub-aquatic deep resonance
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80, now);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.03, now + 1);
+    } else {
+      // Desert canyon & colosseum: warm desert wind resonance
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.linearRampToValueAtTime(90, now + 4);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.025, now + 1);
+    }
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+
+    this.currentAmbienceOsc = osc;
+    this.currentAmbienceGain = gain;
+  }
+
+  public stopArenaAmbience() {
+    if (this.currentAmbienceGain && this.ctx) {
+      try {
+        const now = this.ctx.currentTime;
+        this.currentAmbienceGain.gain.linearRampToValueAtTime(0.0001, now + 0.5);
+        if (this.currentAmbienceOsc) {
+          this.currentAmbienceOsc.stop(now + 0.5);
+        }
+      } catch {
+        // Safe catch on stopped audio
+      }
+      this.currentAmbienceGain = null;
+      this.currentAmbienceOsc = null;
+    }
+  }
+
+  public playSummonFanfare() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const chords = [392, 523.25, 659.25, 783.99, 1046.5];
+    chords.forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      const startTime = now + idx * 0.08;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0.2, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.6);
+
+      osc.connect(gain);
+      gain.connect(this.ctx!.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.6);
+    });
+  }
 }
 
 export const sound = new SoundEngine();
+

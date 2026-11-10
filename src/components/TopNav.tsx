@@ -22,6 +22,7 @@ interface TopNavProps {
   onToggleMute: () => void;
   onOpenQuests: () => void;
   onOpenBackup: () => void;
+  onOpenShop: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -32,6 +33,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onToggleMute,
   onOpenQuests,
   onOpenBackup,
+  onOpenShop,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 py-2.5">
@@ -116,6 +118,16 @@ export const TopNav: React.FC<TopNavProps> = ({
             <Gem className="w-3.5 h-3.5" />
             <span className="font-mono tabular-nums">{playerState.gems}</span>
           </div>
+
+          {/* Summon Portal / Shop */}
+          <button
+            onClick={onOpenShop}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-cyan-500/20 hover:from-amber-500/30 hover:to-cyan-500/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs transition-colors shadow-xs"
+            title="بوابة استدعاء الوحوش والمتجر"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+            <span className="hidden sm:inline">الاستدعاء</span>
+          </button>
 
           {/* Daily Quests button */}
           <button

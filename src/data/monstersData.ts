@@ -523,8 +523,8 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 88,
     baseDefense: 120,
     baseSpeed: 75,
-    avatar: '/src/assets/images/monster_nature_floragorgon_1794265818987.jpg',
-    descriptionAr: 'عملاق خشبي مغطى بالطحالب وأوراق السنديان، يستمد صلابته الدفاعية من جذور الأرض المتجذرة.',
+    avatar: '/src/assets/images/monster_nature_sylvanus_1794331192752.jpg',
+    descriptionAr: 'عملاق خشبي حارس الغابة العتيق مغطى بأوراق السنديان والرموز السحرية المتوهجة، يستمد صلابته من جذور الأرض.',
     goldRate: 130,
     skills: [
       {
@@ -596,8 +596,8 @@ export const SPECIES_CATALOG: Record<string, {
     baseAttack: 118,
     baseDefense: 80,
     baseSpeed: 112,
-    avatar: '/src/assets/images/monster_thunder_voltrion_1794265831820.jpg',
-    descriptionAr: 'وحش ضارٍ يتغذى على شحنات البرق، تومض فرائه بالضوء الأزرق الساطع ويتحرك بسرعة تفوق سرعة الصوت.',
+    avatar: '/src/assets/images/monster_thunder_stormclaw_1794331208127.jpg',
+    descriptionAr: 'نمر صواعق أزرق بأسنان سيفية تومض بالطاقة الكهربائية الفائقة ومخالب مكهربة تمزق أعتى الدروع.',
     goldRate: 150,
     skills: [
       {

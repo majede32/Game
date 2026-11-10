@@ -557,6 +557,18 @@ export const BattleView: React.FC<BattleViewProps> = ({
     enemyMonsters,
   ]);
 
+  // Ambient environmental audio based on active arena
+  useEffect(() => {
+    if (inActiveBattle) {
+      sound.playArenaAmbience(selectedArenaId);
+    } else {
+      sound.stopArenaAmbience();
+    }
+    return () => {
+      sound.stopArenaAmbience();
+    };
+  }, [inActiveBattle, selectedArenaId]);
+
   // Handle victory rewards and distribute XP
   const handleVictoryRewards = () => {
     const updatedState: PlayerState = {
