@@ -179,16 +179,23 @@ export const MonsterBattleSprite: React.FC<MonsterBattleSpriteProps> = ({
           <span className="text-amber-400 font-extrabold text-[11px]">Lvl {monster.level}</span>
         </div>
 
-        {/* Element Icon Badge */}
+        {/* Element Icon & Role Badge */}
         <div className="flex items-center gap-1">
-          <span className={`text-[9px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 ${elemColor.bg} ${elemColor.text} border ${elemColor.border}`}>
-            {monster.element === 'fire' && '🔥 ناري'}
-            {monster.element === 'water' && '💧 مائي'}
-            {monster.element === 'earth' && '⛰️ أرضي'}
-            {monster.element === 'nature' && '🌿 طبيعي'}
-            {monster.element === 'thunder' && '⚡ رعدي'}
-            {monster.element === 'dark' && '🌑 ظلامي'}
+          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1 ${elemColor.bg} ${elemColor.text} border ${elemColor.border}`}>
+            <span>{elemColor.icon || '🔥'}</span>
+            <span>{elemColor.nameAr.split(' ')[0]}</span>
           </span>
+          {monster.role && (
+            <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+              {monster.role === 'Attacker'
+                ? 'مهاجم'
+                : monster.role === 'Tank'
+                ? 'مدافع'
+                : monster.role === 'Support'
+                ? 'داعم'
+                : 'متحكم'}
+            </span>
+          )}
         </div>
 
         {/* Health Bar with percentage */}

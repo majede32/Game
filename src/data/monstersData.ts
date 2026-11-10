@@ -1,52 +1,40 @@
-import { BattleStage, ElementType, EvolutionStage, Monster, MonsterSkill } from '../types/game';
+import { BattleStage, ElementType, EvolutionStage, Monster, MonsterRarity, MonsterRune, MonsterSkill, RuneType } from '../types/game';
 
-// Elemental type advantages (Attacker -> Defender)
+// Elemental type advantages (Attacker -> Defender) based on Monster Legends 10-Element cycle
 export const ELEMENT_ADVANTAGES: Record<ElementType, ElementType[]> = {
   fire: ['nature'],
-  nature: ['earth'],
+  nature: ['magic'],
+  magic: ['metal'],
+  metal: ['light'],
+  light: ['dark'],
+  dark: ['earth'],
   earth: ['thunder'],
   thunder: ['water'],
   water: ['fire'],
-  dark: ['nature', 'thunder'],
+  special: [],
 };
 
 export const ELEMENT_DISADVANTAGES: Record<ElementType, ElementType[]> = {
   fire: ['water'],
   nature: ['fire'],
-  earth: ['nature'],
+  magic: ['nature'],
+  metal: ['magic'],
+  light: ['metal'],
+  dark: ['light'],
+  earth: ['dark'],
   thunder: ['earth'],
   water: ['thunder'],
-  dark: ['dark'],
+  special: [],
 };
 
-export const ELEMENT_COLORS: Record<ElementType, { bg: string; text: string; border: string; glow: string; nameAr: string }> = {
+export const ELEMENT_COLORS: Record<ElementType, { bg: string; text: string; border: string; glow: string; nameAr: string; icon: string }> = {
   fire: {
     bg: 'bg-red-500/20',
     text: 'text-red-400',
     border: 'border-red-500/40',
     glow: 'rgba(239, 68, 68, 0.6)',
     nameAr: 'ناري (Fire)',
-  },
-  earth: {
-    bg: 'bg-amber-600/20',
-    text: 'text-amber-400',
-    border: 'border-amber-600/40',
-    glow: 'rgba(217, 119, 6, 0.6)',
-    nameAr: 'أرضي (Earth)',
-  },
-  water: {
-    bg: 'bg-blue-500/20',
-    text: 'text-blue-400',
-    border: 'border-blue-500/40',
-    glow: 'rgba(59, 130, 246, 0.6)',
-    nameAr: 'مائي (Water)',
-  },
-  dark: {
-    bg: 'bg-purple-600/20',
-    text: 'text-purple-400',
-    border: 'border-purple-600/40',
-    glow: 'rgba(168, 85, 247, 0.6)',
-    nameAr: 'ظلامي (Dark)',
+    icon: '🔥',
   },
   nature: {
     bg: 'bg-emerald-500/20',
@@ -54,6 +42,15 @@ export const ELEMENT_COLORS: Record<ElementType, { bg: string; text: string; bor
     border: 'border-emerald-500/40',
     glow: 'rgba(16, 185, 129, 0.6)',
     nameAr: 'طبيعي (Nature)',
+    icon: '🌿',
+  },
+  earth: {
+    bg: 'bg-amber-600/20',
+    text: 'text-amber-400',
+    border: 'border-amber-600/40',
+    glow: 'rgba(217, 119, 6, 0.6)',
+    nameAr: 'أرضي (Earth)',
+    icon: '⛰️',
   },
   thunder: {
     bg: 'bg-yellow-400/20',
@@ -61,15 +58,66 @@ export const ELEMENT_COLORS: Record<ElementType, { bg: string; text: string; bor
     border: 'border-yellow-400/40',
     glow: 'rgba(250, 204, 21, 0.6)',
     nameAr: 'كهربائي (Thunder)',
+    icon: '⚡',
+  },
+  water: {
+    bg: 'bg-blue-500/20',
+    text: 'text-blue-400',
+    border: 'border-blue-500/40',
+    glow: 'rgba(59, 130, 246, 0.6)',
+    nameAr: 'مائي (Water)',
+    icon: '💧',
+  },
+  dark: {
+    bg: 'bg-purple-600/20',
+    text: 'text-purple-400',
+    border: 'border-purple-600/40',
+    glow: 'rgba(168, 85, 247, 0.6)',
+    nameAr: 'ظلامي (Dark)',
+    icon: '🌑',
+  },
+  magic: {
+    bg: 'bg-fuchsia-500/20',
+    text: 'text-fuchsia-400',
+    border: 'border-fuchsia-500/40',
+    glow: 'rgba(217, 70, 239, 0.6)',
+    nameAr: 'سحري (Magic)',
+    icon: '✨',
+  },
+  light: {
+    bg: 'bg-amber-300/25',
+    text: 'text-amber-200',
+    border: 'border-amber-300/40',
+    glow: 'rgba(252, 211, 77, 0.7)',
+    nameAr: 'ضوئي (Light)',
+    icon: '☀️',
+  },
+  metal: {
+    bg: 'bg-slate-400/20',
+    text: 'text-slate-300',
+    border: 'border-slate-400/40',
+    glow: 'rgba(148, 163, 184, 0.6)',
+    nameAr: 'معدني (Metal)',
+    icon: '🛡️',
+  },
+  special: {
+    bg: 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20',
+    text: 'text-cyan-300',
+    border: 'border-cyan-400/40',
+    glow: 'rgba(6, 182, 212, 0.7)',
+    nameAr: 'خاص (Special)',
+    icon: '👑',
   },
 };
 
-export const SPECIES_CATALOG: Record<string, {
+export interface SpeciesDef {
   speciesId: string;
   name: string;
   nameAr: string;
   element: ElementType;
   secondaryElement?: ElementType;
+  role: 'Attacker' | 'Tank' | 'Support' | 'Control';
+  rarity: 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic' | 'Ancestor';
   baseHp: number;
   baseAttack: number;
   baseDefense: number;
@@ -78,12 +126,16 @@ export const SPECIES_CATALOG: Record<string, {
   descriptionAr: string;
   goldRate: number;
   skills: MonsterSkill[];
-}> = {
+}
+
+export const SPECIES_CATALOG: Record<string, SpeciesDef> = {
   pyrodrake: {
     speciesId: 'pyrodrake',
     name: 'Pyrodrake',
     nameAr: 'بايرودريك التنين الناري',
     element: 'fire',
+    role: 'Attacker',
+    rarity: 'Epic',
     baseHp: 620,
     baseAttack: 110,
     baseDefense: 75,
@@ -156,6 +208,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Terrarok',
     nameAr: 'تيراروك عملاق الأرض',
     element: 'earth',
+    role: 'Tank',
+    rarity: 'Epic',
     baseHp: 820,
     baseAttack: 85,
     baseDefense: 130,
@@ -229,6 +283,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Shadowfang',
     nameAr: 'شادوفانغ شبح الظلال',
     element: 'dark',
+    role: 'Attacker',
+    rarity: 'Legendary',
     baseHp: 580,
     baseAttack: 125,
     baseDefense: 65,
@@ -302,6 +358,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Aquashark',
     nameAr: 'أكواشارك التنين المائي',
     element: 'water',
+    role: 'Support',
+    rarity: 'Rare',
     baseHp: 690,
     baseAttack: 95,
     baseDefense: 90,
@@ -374,6 +432,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Floragorgon',
     nameAr: 'فلوراروك ملك الطبيعة المعمر',
     element: 'nature',
+    role: 'Control',
+    rarity: 'Legendary',
     baseHp: 780,
     baseAttack: 92,
     baseDefense: 110,
@@ -447,6 +507,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Voltrion',
     nameAr: 'فولتريون صقر الصواعق الأسطوري',
     element: 'thunder',
+    role: 'Attacker',
+    rarity: 'Legendary',
     baseHp: 590,
     baseAttack: 128,
     baseDefense: 72,
@@ -519,6 +581,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Sylvanus',
     nameAr: 'سيلفانوس حارس الغابة العتيق',
     element: 'nature',
+    role: 'Tank',
+    rarity: 'Epic',
     baseHp: 810,
     baseAttack: 88,
     baseDefense: 120,
@@ -592,6 +656,8 @@ export const SPECIES_CATALOG: Record<string, {
     name: 'Stormclaw',
     nameAr: 'ستورمكلو نمر العواصف الرعدية',
     element: 'thunder',
+    role: 'Attacker',
+    rarity: 'Rare',
     baseHp: 650,
     baseAttack: 118,
     baseDefense: 80,
@@ -654,6 +720,231 @@ export const SPECIES_CATALOG: Record<string, {
         target: 'single_enemy',
         description: 'Restores stamina on contact.',
         descriptionAr: 'ضربة سريعة تعيد شحن طاقة الاستحمال (+15).',
+        effectType: 'damage',
+        animationKey: 'attack_physical_strike',
+      },
+    ],
+  },
+  genie: {
+    speciesId: 'genie',
+    name: 'Genie',
+    nameAr: 'جيني مارد السحر الأزرق',
+    element: 'magic',
+    role: 'Control',
+    rarity: 'Epic',
+    baseHp: 680,
+    baseAttack: 114,
+    baseDefense: 85,
+    baseSpeed: 108,
+    avatar: '/src/assets/images/monster_magic_genie_1794332869841.jpg',
+    descriptionAr: 'مارد سحري أزرق محرر من القمقم الكوني، يتحكم بالطاقات البنفسجية ويشل قوى الخصوم بتعويذات التنويم والاستنزاف.',
+    goldRate: 155,
+    skills: [
+      {
+        id: 'genie_arcane_mirage',
+        name: 'Arcane Mirage Stun',
+        nameAr: 'سراب الأوهام السحرية (Stun)',
+        element: 'magic',
+        power: 135,
+        staminaCost: 35,
+        cooldown: 2,
+        target: 'single_enemy',
+        description: 'Wraps the target in illusions that disrupt their mind, stunning them for 1 turn.',
+        descriptionAr: 'إحاطة الخصم بأوهام سحرية خارقة تسلب وعيه وتشل حركته لدورة كاملة.',
+        effectType: 'stun',
+        effectValue: 1,
+        animationKey: 'attack_meteor_special',
+      },
+      {
+        id: 'genie_mystic_wave',
+        name: 'Mystic Surge',
+        nameAr: 'موجة السحر الكوني',
+        element: 'magic',
+        power: 90,
+        staminaCost: 25,
+        cooldown: 1,
+        target: 'all_enemies',
+        description: 'Sends arcane ripples across the enemy team.',
+        descriptionAr: 'إطلاق موجات سحرية بنفسجية تصيب جميع وحوش الخصم.',
+        effectType: 'damage',
+        animationKey: 'attack_dark_bloodplague',
+      },
+      {
+        id: 'genie_wish_clarity',
+        name: 'Wish of Clarity',
+        nameAr: 'أمنية الصفاء الروحي',
+        element: 'magic',
+        power: 0,
+        staminaCost: 10,
+        cooldown: 2,
+        target: 'all_allies',
+        description: 'Restores stamina to all allies and cleanses negative effects.',
+        descriptionAr: 'إعادة شحن طاقة الاستحمال لكافة الحلفاء وشفاء جزء من نقاط الصحة.',
+        effectType: 'heal',
+        effectValue: 220,
+        animationKey: 'attack_heal_bloom',
+      },
+      {
+        id: 'genie_strike',
+        name: 'Magic Palm Strike',
+        nameAr: 'صفعة المارد السريعة',
+        element: 'magic',
+        power: 55,
+        staminaCost: 0,
+        cooldown: 0,
+        target: 'single_enemy',
+        description: 'Basic strike restoring stamina.',
+        descriptionAr: 'ضربة سحرية أساسية تستعيد 15 من طاقة الاستحمال.',
+        effectType: 'damage',
+        animationKey: 'attack_physical_strike',
+      },
+    ],
+  },
+  solaris: {
+    speciesId: 'solaris',
+    name: 'Solaris',
+    nameAr: 'سولاريس طائر النور المقدس',
+    element: 'light',
+    role: 'Support',
+    rarity: 'Legendary',
+    baseHp: 750,
+    baseAttack: 105,
+    baseDefense: 98,
+    baseSpeed: 114,
+    avatar: '/src/assets/images/monster_light_solaris_1794332883802.jpg',
+    descriptionAr: 'طائر الشمس الملائكي ذو الأجنحة القوس قزحية المضيئة، ينشر أنوار الحياة ويبدد لعنات الظلام بسطوعه الطاهر.',
+    goldRate: 170,
+    skills: [
+      {
+        id: 'solaris_divine_blessing',
+        name: 'Divine Solar Blessing',
+        nameAr: 'البركة الشمسية الشاملة (Full Heal)',
+        element: 'light',
+        power: 0,
+        staminaCost: 35,
+        cooldown: 2,
+        target: 'all_allies',
+        description: 'Bathes the whole team in sacred solar radiance, restoring massive HP.',
+        descriptionAr: 'إفاضة نور سماوي يعالج 350 نقطة صحة لجميع وحوش الفريق وينقي الساحات.',
+        effectType: 'heal',
+        effectValue: 350,
+        animationKey: 'attack_heal_bloom',
+      },
+      {
+        id: 'solaris_solar_beam',
+        name: 'Celestial Solar Ray',
+        nameAr: 'شعاع النور الحارق',
+        element: 'light',
+        power: 130,
+        staminaCost: 30,
+        cooldown: 1,
+        target: 'single_enemy',
+        description: 'Focuses a blinding pillar of light onto a single enemy.',
+        descriptionAr: 'تركيز حزمة ضوئية محرقة تسحق الخصم وتخترق دفاعاته الطبيعية.',
+        effectType: 'damage',
+        animationKey: 'attack_meteor_special',
+      },
+      {
+        id: 'solaris_light_shield',
+        name: 'Aegis of Dawn',
+        nameAr: 'حاجز فجر النور',
+        element: 'light',
+        power: 0,
+        staminaCost: 20,
+        cooldown: 2,
+        target: 'self',
+        description: 'Summons a protective halo that absorbs incoming strikes.',
+        descriptionAr: 'تكوين هالة شمسية تمتص 280 نقطة ضرر.',
+        effectType: 'shield',
+        effectValue: 280,
+        animationKey: 'attack_heal_bloom',
+      },
+      {
+        id: 'solaris_strike',
+        name: 'Sacred Feather',
+        nameAr: 'ريشة النور السريعة',
+        element: 'light',
+        power: 52,
+        staminaCost: 0,
+        cooldown: 0,
+        target: 'single_enemy',
+        description: 'Restores stamina on contact.',
+        descriptionAr: 'هجمة ضوئية سريعة تعيد شحن طاقة الاستحمال (+15).',
+        effectType: 'damage',
+        animationKey: 'attack_physical_strike',
+      },
+    ],
+  },
+  ironguard: {
+    speciesId: 'ironguard',
+    name: 'Iron Guard',
+    nameAr: 'أيرون غارد الفارس الفولاذي',
+    element: 'metal',
+    role: 'Tank',
+    rarity: 'Legendary',
+    baseHp: 890,
+    baseAttack: 100,
+    baseDefense: 145,
+    baseSpeed: 68,
+    avatar: '/src/assets/images/monster_metal_ironguard_1794332898769.jpg',
+    descriptionAr: 'عملاق فولاذي مدجج بدروع التيتانيوم والمطارق الميكانيكية، يمتلك أعلى قدرة تحمل وصلابة دفاعية في اللعبة.',
+    goldRate: 165,
+    skills: [
+      {
+        id: 'iron_fortress',
+        name: 'Fortress Titanium Shield',
+        nameAr: 'درع الحصن الفولاذي المتين',
+        element: 'metal',
+        power: 0,
+        staminaCost: 30,
+        cooldown: 2,
+        target: 'self',
+        description: 'Locks armor into an impenetrable fortress absorbing massive blows.',
+        descriptionAr: 'تفعيل نظام الحصن الفولاذي لامتصاص 420 نقطة ضرر وتثبيت الخط الدفاعي.',
+        effectType: 'shield',
+        effectValue: 420,
+        animationKey: 'attack_earth_shatter',
+      },
+      {
+        id: 'iron_hammer',
+        name: 'Hydraulic Titan Hammer',
+        nameAr: 'مطرقة التيتان الهيدروليكية',
+        element: 'metal',
+        power: 145,
+        staminaCost: 35,
+        cooldown: 1,
+        target: 'single_enemy',
+        description: 'Slams a massive steel hammer onto the target, stunning them.',
+        descriptionAr: 'سحق الخصم بمطرقة فولاذية ثقيلة تسبب ضرراً ميكانيكياً مدمراً وشللاً مؤقتاً.',
+        effectType: 'stun',
+        effectValue: 1,
+        animationKey: 'attack_earth_shatter',
+      },
+      {
+        id: 'iron_cleave',
+        name: 'Steel Blade Spin',
+        nameAr: 'دوامة الشفرات الفولاذية',
+        element: 'metal',
+        power: 85,
+        staminaCost: 25,
+        cooldown: 1,
+        target: 'all_enemies',
+        description: 'Spins blades striking the entire opposing squad.',
+        descriptionAr: 'دوران سريع بشفرات الصلب يصيب كافة وحوش الفريق الخصم.',
+        effectType: 'damage',
+        animationKey: 'attack_physical_claws_fire',
+      },
+      {
+        id: 'iron_strike',
+        name: 'Iron Fist',
+        nameAr: 'قبضة الفولاذ السريعة',
+        element: 'metal',
+        power: 58,
+        staminaCost: 0,
+        cooldown: 0,
+        target: 'single_enemy',
+        description: 'Restores stamina on impact.',
+        descriptionAr: 'لكمة معدنية أساسية تستعيد 15 من طاقة الاستحمال.',
         effectType: 'damage',
         animationKey: 'attack_physical_strike',
       },
@@ -753,7 +1044,10 @@ export function createMonsterInstance(speciesId: string, level: number = 10, sta
     nameAr: spec.nameAr,
     element: spec.element,
     secondaryElement: spec.secondaryElement,
+    role: spec.role,
+    rarity: spec.rarity,
     level,
+    rank: 0,
     xp: 0,
     maxXp: level * 100,
     stage,
@@ -769,6 +1063,8 @@ export function createMonsterInstance(speciesId: string, level: number = 10, sta
     maxStamina: 100,
     avatar: spec.avatar,
     skills: JSON.parse(JSON.stringify(spec.skills)),
+    runes: [],
+    relics: [],
     goldPerHour: Math.round(spec.goldRate * (1 + (level - 1) * 0.2 + (stars - 1) * 0.25)),
   };
 }
@@ -999,4 +1295,294 @@ export const REALISTIC_ARENAS: BattleArenaTheme[] = [
     accentColor: '#f59e0b',
   },
 ];
+
+// -------------------------------------------------------------
+// RUNE SYSTEM (تعويذات الرونز)
+// -------------------------------------------------------------
+export interface RuneConfig {
+  type: RuneType;
+  nameAr: string;
+  nameEn: string;
+  colorBg: string;
+  colorText: string;
+  borderColor: string;
+  icon: string;
+  descriptionAr: string;
+  getBonusPercent: (level: number) => number;
+  getBonusFlat: (level: number) => number;
+}
+
+export const RUNE_CONFIGS: Record<RuneType, RuneConfig> = {
+  life: {
+    type: 'life',
+    nameAr: 'رون الحياة (Life)',
+    nameEn: 'Life Rune',
+    colorBg: 'bg-emerald-500/20',
+    colorText: 'text-emerald-400',
+    borderColor: 'border-emerald-500/40',
+    icon: '💚',
+    descriptionAr: 'يزيد الحد الأقصى لصحة الوحش بنسبة مئوية قوية.',
+    getBonusPercent: (lvl) => 10 + lvl * 7, // Level 1: 17%, Level 5: 45%, Level 10: 80%
+    getBonusFlat: () => 0,
+  },
+  strength: {
+    type: 'strength',
+    nameAr: 'رون القوة (Strength)',
+    nameEn: 'Strength Rune',
+    colorBg: 'bg-red-500/20',
+    colorText: 'text-red-400',
+    borderColor: 'border-red-500/40',
+    icon: '⚔️',
+    descriptionAr: 'يزيد قوة الهجوم وضرر كافة المهارات بنسبة مئوية هائلة.',
+    getBonusPercent: (lvl) => 10 + lvl * 7,
+    getBonusFlat: () => 0,
+  },
+  speed: {
+    type: 'speed',
+    nameAr: 'رون السرعة (Speed)',
+    nameEn: 'Speed Rune',
+    colorBg: 'bg-blue-500/20',
+    colorText: 'text-blue-400',
+    borderColor: 'border-blue-500/40',
+    icon: '⚡',
+    descriptionAr: 'يزيد سرعة الوحش بقيمة رقمية مباشرة لأسبقية الهجوم في المعركة.',
+    getBonusPercent: () => 0,
+    getBonusFlat: (lvl) => 4 + lvl * 4, // Level 1: +8, Level 5: +24, Level 10: +44
+  },
+  team_speed: {
+    type: 'team_speed',
+    nameAr: 'رون سرعة الفريق (Team Speed)',
+    nameEn: 'Team Speed Rune',
+    colorBg: 'bg-amber-500/20',
+    colorText: 'text-amber-300',
+    borderColor: 'border-amber-500/40',
+    icon: '🏃',
+    descriptionAr: 'يمنح سرعة إضافية لجميع حلفائك الثلاثة داخل المعركة.',
+    getBonusPercent: () => 0,
+    getBonusFlat: (lvl) => 2 + lvl * 2, // Level 1: +4 to team, Level 5: +12, Level 10: +22
+  },
+};
+
+export function createRuneInstance(type: RuneType, level: number = 1): MonsterRune {
+  const cfg = RUNE_CONFIGS[type];
+  const bonusPercent = cfg.getBonusPercent(level);
+  const bonusFlat = cfg.getBonusFlat(level);
+  return {
+    id: `rune_${type}_${level}_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+    type,
+    level,
+    bonusPercent: bonusPercent > 0 ? bonusPercent : undefined,
+    bonusFlat: bonusFlat > 0 ? bonusFlat : undefined,
+    nameAr: `${cfg.nameAr} المستوى ${toRomanNumeral(level)}`,
+  };
+}
+
+export function toRomanNumeral(num: number): string {
+  const romans = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  return romans[num - 1] || `${num}`;
+}
+
+export function getStarterRunes(): MonsterRune[] {
+  return [
+    createRuneInstance('strength', 2),
+    createRuneInstance('life', 2),
+    createRuneInstance('speed', 2),
+    createRuneInstance('team_speed', 1),
+    createRuneInstance('strength', 1),
+    createRuneInstance('life', 1),
+  ];
+}
+
+// Calculates absolute stat boosts given an equipped monster's runes
+export function calculateMonsterRuneBonuses(monster: Monster): {
+  hpBonusPercent: number;
+  attackBonusPercent: number;
+  speedFlatBonus: number;
+  teamSpeedFlatBonus: number;
+} {
+  let hpBonusPercent = 0;
+  let attackBonusPercent = 0;
+  let speedFlatBonus = 0;
+  let teamSpeedFlatBonus = 0;
+
+  if (Array.isArray(monster.runes)) {
+    monster.runes.forEach((r) => {
+      const cfg = RUNE_CONFIGS[r.type];
+      if (cfg) {
+        if (r.type === 'life') hpBonusPercent += cfg.getBonusPercent(r.level);
+        if (r.type === 'strength') attackBonusPercent += cfg.getBonusPercent(r.level);
+        if (r.type === 'speed') speedFlatBonus += cfg.getBonusFlat(r.level);
+        if (r.type === 'team_speed') teamSpeedFlatBonus += cfg.getBonusFlat(r.level);
+      }
+    });
+  }
+
+  return { hpBonusPercent, attackBonusPercent, speedFlatBonus, teamSpeedFlatBonus };
+}
+
+// -------------------------------------------------------------
+// MULTIPLAYER LEAGUES (دوري الكؤوس)
+// -------------------------------------------------------------
+export interface MultiplayerLeagueTier {
+  id: 'Bronze' | 'Silver' | 'Gold' | 'Champion' | 'Legendary';
+  nameAr: string;
+  minTrophies: number;
+  icon: string;
+  badgeBg: string;
+  chestRewards: { gold: number; food: number; gems: number; runeTier: number };
+}
+
+export const MULTIPLAYER_LEAGUES: MultiplayerLeagueTier[] = [
+  {
+    id: 'Bronze',
+    nameAr: 'الدوري البرونزي (Bronze)',
+    minTrophies: 0,
+    icon: '🥉',
+    badgeBg: 'from-amber-800 to-amber-950',
+    chestRewards: { gold: 1500, food: 1000, gems: 5, runeTier: 1 },
+  },
+  {
+    id: 'Silver',
+    nameAr: 'الدوري الفضي (Silver)',
+    minTrophies: 1200,
+    icon: '🥈',
+    badgeBg: 'from-slate-400 to-slate-700',
+    chestRewards: { gold: 3500, food: 2500, gems: 10, runeTier: 2 },
+  },
+  {
+    id: 'Gold',
+    nameAr: 'الدوري الذهبي (Gold)',
+    minTrophies: 2000,
+    icon: '🥇',
+    badgeBg: 'from-yellow-500 to-amber-700',
+    chestRewards: { gold: 7500, food: 5000, gems: 20, runeTier: 3 },
+  },
+  {
+    id: 'Champion',
+    nameAr: 'دوري الأبطال (Champion)',
+    minTrophies: 3000,
+    icon: '🏆',
+    badgeBg: 'from-cyan-500 to-blue-800',
+    chestRewards: { gold: 15000, food: 10000, gems: 40, runeTier: 4 },
+  },
+  {
+    id: 'Legendary',
+    nameAr: 'الدوري الأسطوري (Legendary)',
+    minTrophies: 4000,
+    icon: '👑',
+    badgeBg: 'from-purple-500 via-pink-600 to-amber-500',
+    chestRewards: { gold: 30000, food: 20000, gems: 80, runeTier: 5 },
+  },
+];
+
+export interface SimulatedOpponent {
+  id: string;
+  name: string;
+  trophies: number;
+  monsters: { speciesId: string; level: number }[];
+  rewardTrophies: number;
+}
+
+export function generateMultiplayerOpponents(playerTrophies: number): SimulatedOpponent[] {
+  const sampleNames = [
+    'سيد التنانين (DragonLord)',
+    'قاهر العواصف (StormBringer)',
+    'فارس النور (SolarKnight)',
+    'حارس الزمرد (EmeraldGaurd)',
+    'أسطورة الظلال (ShadowMaster)',
+    'صياد النيازك (MeteorHunter)',
+  ];
+
+  const speciesList = ['pyrodrake', 'terrarok', 'shadowfang', 'aquashark', 'floragorgon', 'voltrion', 'genie', 'solaris', 'ironguard'];
+
+  const approxLevel = Math.max(10, Math.min(45, Math.floor(playerTrophies / 100)));
+
+  return [
+    {
+      id: 'opp_1',
+      name: sampleNames[0],
+      trophies: Math.max(0, playerTrophies - 45),
+      monsters: [
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel - 1 },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel - 1 },
+      ],
+      rewardTrophies: 28,
+    },
+    {
+      id: 'opp_2',
+      name: sampleNames[1],
+      trophies: playerTrophies + 15,
+      monsters: [
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel + 1 },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel },
+      ],
+      rewardTrophies: 32,
+    },
+    {
+      id: 'opp_3',
+      name: sampleNames[2],
+      trophies: playerTrophies + 60,
+      monsters: [
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel + 2 },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel + 2 },
+        { speciesId: speciesList[Math.floor(Math.random() * speciesList.length)], level: approxLevel + 3 },
+      ],
+      rewardTrophies: 38,
+    },
+  ];
+}
+
+// -------------------------------------------------------------
+// FACTION COLOSSEUM (حلبات المصارعة حسب الندرة)
+// -------------------------------------------------------------
+export interface ColosseumTier {
+  id: string;
+  nameAr: string;
+  subtitleAr: string;
+  allowedRarities: MonsterRarity[];
+  descriptionAr: string;
+  icon: string;
+  gradient: string;
+  nodesCount: number;
+  baseRewardGold: number;
+}
+
+export const FACTION_COLOSSEUMS: ColosseumTier[] = [
+  {
+    id: 'stone_colosseum',
+    nameAr: 'كولوسيوم الحجر (Stone Colosseum)',
+    subtitleAr: 'فئة الوحوش النادرة والممتازة (Rare / Epic)',
+    allowedRarities: ['Common', 'Uncommon', 'Rare', 'Epic'],
+    descriptionAr: 'حلبة مخصصة لاختبار المهارات التكتيكية بالوحوش المتوسطة مع استبعاد الأساطير.',
+    icon: '🪨',
+    gradient: 'from-stone-700 to-zinc-900',
+    nodesCount: 5,
+    baseRewardGold: 4000,
+  },
+  {
+    id: 'bronze_colosseum',
+    nameAr: 'كولوسيوم البرونز (Bronze Colosseum)',
+    subtitleAr: 'حلبة الأساطير (Legendary Only)',
+    allowedRarities: ['Legendary'],
+    descriptionAr: 'معارك محتدمة لا يسمح فيها إلا بنخبة الوحوش الأسطورية الحاملة للتعويذات الفائقة.',
+    icon: '🛡️',
+    gradient: 'from-amber-700 to-orange-950',
+    nodesCount: 5,
+    baseRewardGold: 9000,
+  },
+  {
+    id: 'iron_colosseum',
+    nameAr: 'كولوسيوم التيتانيوم (Iron Colosseum)',
+    subtitleAr: 'حلبة الكائنات المتسامية والخارقة (Mythic & Ascended)',
+    allowedRarities: ['Mythic', 'Ancestor', 'Legendary'],
+    descriptionAr: 'أقسى تحدي قتالي في عالم مونستر مع مكافآت ضخمة من الجواهر ورونز المستوى المتقدم.',
+    icon: '⚔️',
+    gradient: 'from-purple-900 to-slate-950',
+    nodesCount: 5,
+    baseRewardGold: 18000,
+  },
+];
+
 

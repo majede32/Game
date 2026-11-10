@@ -1,4 +1,36 @@
-export type ElementType = 'fire' | 'earth' | 'water' | 'dark' | 'nature' | 'thunder';
+export type ElementType =
+  | 'fire'
+  | 'nature'
+  | 'earth'
+  | 'thunder'
+  | 'water'
+  | 'dark'
+  | 'magic'
+  | 'light'
+  | 'metal'
+  | 'special';
+
+export type MonsterRole = 'Attacker' | 'Tank' | 'Support' | 'Control';
+
+export type MonsterRarity = 'Common' | 'Uncommon' | 'Rare' | 'Epic' | 'Legendary' | 'Mythic' | 'Ancestor';
+
+export type RuneType = 'life' | 'strength' | 'speed' | 'team_speed';
+
+export interface MonsterRune {
+  id: string;
+  type: RuneType;
+  level: number; // 1 to 10
+  bonusPercent?: number; // e.g. +15%
+  bonusFlat?: number; // e.g. +12 speed
+  nameAr: string;
+}
+
+export interface MonsterRelic {
+  id: string;
+  category: 'Amulet' | 'Sword' | 'Shield' | 'Staff' | 'Armor' | 'Mask';
+  nameAr: string;
+  perkDescriptionAr: string;
+}
 
 export interface MonsterSkill {
   id: string;
@@ -35,7 +67,10 @@ export interface Monster {
   nameAr: string;
   element: ElementType;
   secondaryElement?: ElementType;
+  role: MonsterRole;
+  rarity: MonsterRarity;
   level: number;
+  rank: number; // 0 to 5
   xp: number;
   maxXp: number;
   stage: EvolutionStage;
@@ -51,6 +86,8 @@ export interface Monster {
   habitatId?: string;
   skills: MonsterSkill[];
   unlockedSkillIds?: string[];
+  runes: MonsterRune[];
+  relics?: MonsterRelic[];
   goldPerHour: number;
   canEvolve?: boolean;
   evolutionMilestone?: 10 | 20 | 35;
@@ -107,10 +144,15 @@ export interface PlayerState {
   gold: number;
   food: number;
   gems: number;
+  trophies: number;
+  league: 'Bronze' | 'Silver' | 'Gold' | 'Champion' | 'Legendary';
   buildings: IslandBuilding[];
   monsters: Monster[];
   eggsInHatchery: MonsterEgg[];
   completedStages: number;
+  defenseMonsterIds: string[];
+  runesInventory: MonsterRune[];
+  colosseumScores: Record<string, number>;
 }
 
 export interface BattleMonster {

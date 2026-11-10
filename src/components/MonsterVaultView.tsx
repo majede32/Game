@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EvolutionStage, Monster, PlayerState } from '../types/game';
-import { ELEMENT_COLORS, EVOLUTION_STAGES_INFO } from '../data/monstersData';
+import { ELEMENT_COLORS, EVOLUTION_STAGES_INFO, RUNE_CONFIGS } from '../data/monstersData';
 import { sound } from '../services/soundEffects';
 import { EvolutionModal } from './EvolutionModal';
+import { RuneModal } from './RuneModal';
 import {
   Sparkles,
   Heart,
@@ -36,6 +37,7 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
   const [elementFilter, setElementFilter] = useState<string>('all');
   const [levelUpEffect, setLevelUpEffect] = useState<boolean>(false);
   const [evolvingMonster, setEvolvingMonster] = useState<Monster | null>(null);
+  const [isRuneModalOpen, setIsRuneModalOpen] = useState<boolean>(false);
 
   const activeMonster =
     playerState.monsters.find((m) => m.id === activeMonsterId) || playerState.monsters[0];
@@ -355,6 +357,45 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
                   </div>
                 </div>
 
+                {/* Equipped Runes Quick Summary */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-300">الرونز المجهزة:</span>
+                    <div className="flex items-center gap-1.5">
+                      {[0, 1, 2].map((idx) => {
+                        const r = activeMonster.runes?.[idx];
+                        if (r) {
+                          const cfg = RUNE_CONFIGS[r.type];
+                          return (
+                            <span
+                              key={idx}
+                              title={`${r.nameAr}`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${cfg.borderColor} ${cfg.colorBg} ${cfg.colorText}`}
+                            >
+                              {cfg.icon} Lv.{r.level}
+                            </span>
+                          );
+                        }
+                        return (
+                          <span
+                            key={idx}
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold border border-dashed border-slate-700 bg-slate-900 text-slate-500"
+                          >
+                            فارغ
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsRuneModalOpen(true)}
+                    className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3 text-amber-300" />
+                    <span>إدارة الرونز</span>
+                  </button>
+                </div>
+
                 {/* Feeding Action Buttons */}
                 <div className="flex items-center gap-2">
                   <button
@@ -425,6 +466,17 @@ export const MonsterVaultView: React.FC<MonsterVaultViewProps> = ({
           }}
         />
       )}
+
+      {/* Rune Management Modal */}
+      {isRuneModalOpen && (
+        <RuneModal
+          playerState={playerState}
+          onUpdatePlayerState={onUpdatePlayerState}
+          monsterId={activeMonster.id}
+          onClose={() => setIsRuneModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
+

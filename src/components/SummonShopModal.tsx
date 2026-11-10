@@ -48,7 +48,7 @@ export const SummonShopModal: React.FC<SummonShopModalProps> = ({
     setIsSummoning(true);
 
     // Pick random monster (more chance for standard monsters)
-    const pool = ['pyrodrake', 'terrarok', 'aquashark', 'sylvanus', 'floragorgon'];
+    const pool = ['pyrodrake', 'terrarok', 'aquashark', 'sylvanus', 'floragorgon', 'stormclaw', 'genie'];
     const chosenSpecies = pool[Math.floor(Math.random() * pool.length)];
     const newMonster = createMonsterInstance(chosenSpecies, Math.floor(Math.random() * 3) + 5);
 
@@ -78,8 +78,8 @@ export const SummonShopModal: React.FC<SummonShopModalProps> = ({
     sound.playCoin();
     setIsSummoning(true);
 
-    // Pick elite monster (Voltrion, Stormclaw, Shadowfang, Floragorgon)
-    const pool = ['voltrion', 'stormclaw', 'shadowfang', 'floragorgon', 'pyrodrake'];
+    // Pick elite monster (Voltrion, Stormclaw, Shadowfang, Floragorgon, Genie, Solaris, Ironguard)
+    const pool = ['voltrion', 'solaris', 'ironguard', 'genie', 'shadowfang', 'floragorgon', 'stormclaw', 'pyrodrake'];
     const chosenSpecies = pool[Math.floor(Math.random() * pool.length)];
     const newMonster = createMonsterInstance(chosenSpecies, Math.floor(Math.random() * 4) + 12);
     // Grant higher stars for gem summon

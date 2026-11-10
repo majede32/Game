@@ -1,9 +1,9 @@
 import { IslandBuilding, Monster, PlayerState } from '../types/game';
-import { createMonsterInstance, SPECIES_CATALOG } from './monstersData';
+import { createMonsterInstance, getStarterRunes, SPECIES_CATALOG } from './monstersData';
 
-const CURRENT_VERSION = 'v2_monsterr';
+const CURRENT_VERSION = 'v3_monsterr_master';
 const STORAGE_KEY = `monsterr_game_state_${CURRENT_VERSION}`;
-const LEGACY_STORAGE_KEY = 'monsterr_game_state_v1';
+const LEGACY_STORAGE_KEY = 'monsterr_game_state_v2_monsterr';
 
 export function getInitialGameState(): PlayerState {
   const m1 = createMonsterInstance('pyrodrake', 14);
@@ -12,6 +12,9 @@ export function getInitialGameState(): PlayerState {
   const m4 = createMonsterInstance('aquashark', 10);
   const m5 = createMonsterInstance('floragorgon', 11);
   const m6 = createMonsterInstance('voltrion', 12);
+  const m7 = createMonsterInstance('genie', 12);
+  const m8 = createMonsterInstance('solaris', 13);
+  const m9 = createMonsterInstance('ironguard', 13);
 
   const defaultBuildings: IslandBuilding[] = [
     {
@@ -171,8 +174,10 @@ export function getInitialGameState(): PlayerState {
     gold: 5850,
     food: 1850,
     gems: 50,
+    trophies: 1080,
+    league: 'Bronze',
     buildings: defaultBuildings,
-    monsters: [m1, m2, m3, m4, m5, m6],
+    monsters: [m1, m2, m3, m4, m5, m6, m7, m8, m9],
     eggsInHatchery: [
       {
         id: 'egg_fire_1',
@@ -186,6 +191,9 @@ export function getInitialGameState(): PlayerState {
       },
     ],
     completedStages: 1,
+    defenseMonsterIds: [m1.id, m2.id, m3.id],
+    runesInventory: getStarterRunes(),
+    colosseumScores: {},
   };
 }
 
@@ -203,6 +211,8 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
   const food = Number.isFinite(parsed.food) && parsed.food >= 0 ? parsed.food : initial.food;
   const gems = Number.isFinite(parsed.gems) && parsed.gems >= 0 ? parsed.gems : initial.gems;
   const completedStages = Number.isFinite(parsed.completedStages) ? parsed.completedStages : 1;
+  const trophies = Number.isFinite(parsed.trophies) ? parsed.trophies : 1080;
+  const league = parsed.league || 'Bronze';
 
   // Validate monsters array
   const monsters: Monster[] = Array.isArray(parsed.monsters) && parsed.monsters.length > 0
@@ -236,14 +246,19 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
           lockedReasonAr = 'بلغ الحد الأقصى لطور العملاق (المستوى 35). يتطلب التحول المتسامي.';
         }
 
+        const specDef = SPECIES_CATALOG[m.speciesId];
+
         return {
           id: m.id || `m_repaired_${idx}`,
           speciesId: m.speciesId || 'pyrodrake',
-          name: m.name || 'Monster',
-          nameAr: m.nameAr || 'وحش',
-          element: m.element || 'fire',
+          name: m.name || (specDef?.name) || 'Monster',
+          nameAr: m.nameAr || (specDef?.nameAr) || 'وحش',
+          element: m.element || (specDef?.element) || 'fire',
           secondaryElement: m.secondaryElement,
+          role: m.role || (specDef?.role) || 'Attacker',
+          rarity: m.rarity || (specDef?.rarity) || 'Rare',
           level: baseLevel,
+          rank: Number.isFinite(m.rank) ? m.rank : 0,
           xp: Number.isFinite(m.xp) ? m.xp : 0,
           maxXp: Number.isFinite(m.maxXp) ? m.maxXp : baseLevel * 100,
           stage,
@@ -255,9 +270,11 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
           speed: Number.isFinite(m.speed) ? m.speed : 90,
           stamina: Number.isFinite(m.stamina) ? m.stamina : 100,
           maxStamina: Number.isFinite(m.maxStamina) ? m.maxStamina : 100,
-          avatar: (SPECIES_CATALOG[m.speciesId]?.avatar) || m.avatar || '/src/assets/images/monster_fire_pyrodrake_1794261178897.jpg',
+          avatar: (specDef?.avatar) || m.avatar || '/src/assets/images/monster_fire_pyrodrake_1794261178897.jpg',
           habitatId: m.habitatId,
-          skills: Array.isArray(m.skills) ? m.skills : [],
+          skills: Array.isArray(m.skills) && m.skills.length > 0 ? m.skills : (specDef?.skills || []),
+          runes: Array.isArray(m.runes) ? m.runes : [],
+          relics: Array.isArray(m.relics) ? m.relics : [],
           goldPerHour: Number.isFinite(m.goldPerHour) ? m.goldPerHour : 100,
           canEvolve: m.canEvolve ?? canEvolve,
           isLevelLocked,
@@ -265,6 +282,14 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
         };
       })
     : initial.monsters;
+
+  // Ensure new species are introduced if player save lacks them
+  const currentSpeciesIds = new Set(monsters.map((m) => m.speciesId));
+  ['genie', 'solaris', 'ironguard'].forEach((specId) => {
+    if (!currentSpeciesIds.has(specId)) {
+      monsters.push(createMonsterInstance(specId, 12));
+    }
+  });
 
   // Validate buildings array
   const buildings: IslandBuilding[] = Array.isArray(parsed.buildings) && parsed.buildings.length > 0
@@ -295,6 +320,11 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
     : initial.buildings;
 
   const eggsInHatchery = Array.isArray(parsed.eggsInHatchery) ? parsed.eggsInHatchery : [];
+  const defenseMonsterIds = Array.isArray(parsed.defenseMonsterIds) && parsed.defenseMonsterIds.length > 0
+    ? parsed.defenseMonsterIds
+    : monsters.slice(0, 3).map((m) => m.id);
+  const runesInventory = Array.isArray(parsed.runesInventory) ? parsed.runesInventory : getStarterRunes();
+  const colosseumScores = parsed.colosseumScores && typeof parsed.colosseumScores === 'object' ? parsed.colosseumScores : {};
 
   return {
     playerName,
@@ -304,10 +334,15 @@ function sanitizeAndMigrateState(parsed: any): PlayerState {
     gold,
     food,
     gems,
+    trophies,
+    league,
     buildings,
     monsters,
     eggsInHatchery,
     completedStages,
+    defenseMonsterIds,
+    runesInventory,
+    colosseumScores,
   };
 }
 
