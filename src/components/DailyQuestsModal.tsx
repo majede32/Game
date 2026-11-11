@@ -1,226 +1,274 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'motion/react';
-import { PlayerState } from '../types/game';
+import { DailyQuest, PlayerState } from '../types/game';
+import { createRuneInstance } from '../data/monstersData';
 import { sound } from '../services/soundEffects';
-import { Trophy, CheckCircle2, Circle, Coins, Wheat, Gem, X, Sparkles } from 'lucide-react';
+import { CheckCircle2, Gift, Sparkles, X, Trophy, Coins, Wheat, Gem } from 'lucide-react';
 
 interface DailyQuestsModalProps {
   playerState: PlayerState;
-  onClaimReward: (updatedState: PlayerState) => void;
+  onUpdatePlayerState: (updated: PlayerState) => void;
   onClose: () => void;
 }
 
-interface Quest {
-  id: string;
-  titleAr: string;
-  descAr: string;
-  targetCount: number;
-  currentCount: number;
-  rewardType: 'gold' | 'food' | 'gems';
-  rewardAmount: number;
-  claimed: boolean;
+export function getDefaultDailyQuests(): DailyQuest[] {
+  return [
+    {
+      id: 'q_battle_2',
+      titleAr: 'خوض معارك الحلبة',
+      descriptionAr: 'خُض معركتين في خريطة المغامرة أو دوري الكؤوس',
+      targetCount: 2,
+      currentCount: 0,
+      isClaimed: false,
+      rewardType: 'gold',
+      rewardAmount: 3000,
+      icon: '⚔️',
+    },
+    {
+      id: 'q_feed_3',
+      titleAr: 'إطعام الوحوش وتنميتها',
+      descriptionAr: 'أطعم وحوشك 3 مرات لزيادة قوتها وفتح مهاراتها',
+      targetCount: 3,
+      currentCount: 0,
+      isClaimed: false,
+      rewardType: 'gems',
+      rewardAmount: 10,
+      icon: '🍎',
+    },
+    {
+      id: 'q_summon_1',
+      titleAr: 'بوابة الاستدعاء الأسطورية',
+      descriptionAr: 'استدعِ وحشاً جديداً من متجر الاستدعاء بالذهب أو الجواهر',
+      targetCount: 1,
+      currentCount: 0,
+      isClaimed: false,
+      rewardType: 'gold',
+      rewardAmount: 4000,
+      icon: '✨',
+    },
+    {
+      id: 'q_rune_1',
+      titleAr: 'تجهيز وصهر الرونز',
+      descriptionAr: 'جهّز أو اصهر تعويذة رون في مبنى الرونز',
+      targetCount: 1,
+      currentCount: 0,
+      isClaimed: false,
+      rewardType: 'rune',
+      rewardAmount: 1,
+      icon: '💎',
+    },
+    {
+      id: 'q_pvp_win',
+      titleAr: 'نصر دوري الكؤوس',
+      descriptionAr: 'حقّق فوزاً في دوري الكؤوس أو كولوسيوم الفصائل',
+      targetCount: 1,
+      currentCount: 0,
+      isClaimed: false,
+      rewardType: 'gems',
+      rewardAmount: 15,
+      icon: '🏆',
+    },
+  ];
 }
 
 export const DailyQuestsModal: React.FC<DailyQuestsModalProps> = ({
   playerState,
-  onClaimReward,
+  onUpdatePlayerState,
   onClose,
 }) => {
-  // Compute quest progress from current state
-  const [claimedQuests, setClaimedQuests] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('monsterr_claimed_quests');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const quests = playerState.dailyQuests || getDefaultDailyQuests();
 
-  const quests: Quest[] = [
-    {
-      id: 'q_monsters_count',
-      titleAr: 'توسيع العشيرة (Master Breeder)',
-      descAr: 'امتلاك 5 وحوش على الأقل في جزيرتك',
-      targetCount: 5,
-      currentCount: playerState.monsters.length,
-      rewardType: 'gold',
-      rewardAmount: 1500,
-      claimed: claimedQuests.includes('q_monsters_count'),
-    },
-    {
-      id: 'q_battle_stages',
-      titleAr: 'قاهر الساحات (Arena Champion)',
-      descAr: 'اجتياز مرحلتين على الأقل في حملة المعارك',
-      targetCount: 2,
-      currentCount: playerState.completedStages,
-      rewardType: 'gems',
-      rewardAmount: 25,
-      claimed: claimedQuests.includes('q_battle_stages'),
-    },
-    {
-      id: 'q_high_level',
-      titleAr: 'صقل القوة (Titan Power)',
-      descAr: 'رفع مستوى أي وحش إلى المستوى 12 فما فوق',
-      targetCount: 12,
-      currentCount: Math.max(...playerState.monsters.map((m) => m.level), 0),
-      rewardType: 'food',
-      rewardAmount: 800,
-      claimed: claimedQuests.includes('q_high_level'),
-    },
-    {
-      id: 'q_habitats',
-      titleAr: 'إعمار الجزيرة (Island Builder)',
-      descAr: 'امتلاك 6 مبانٍ نشطة على الجزيرة',
-      targetCount: 6,
-      currentCount: playerState.buildings.length,
-      rewardType: 'gold',
-      rewardAmount: 2000,
-      claimed: claimedQuests.includes('q_habitats'),
-    },
-  ];
+  const completedCount = quests.filter((q) => q.currentCount >= q.targetCount).length;
+  const claimedCount = quests.filter((q) => q.isClaimed).length;
+  const allCompleted = completedCount >= quests.length;
 
-  const handleClaim = (quest: Quest) => {
-    if (quest.claimed || quest.currentCount < quest.targetCount) return;
+  const handleClaimQuest = (quest: DailyQuest) => {
+    if (quest.isClaimed || quest.currentCount < quest.targetCount) return;
 
-    sound.playVictory();
-    const updatedClaimed = [...claimedQuests, quest.id];
-    setClaimedQuests(updatedClaimed);
-    try {
-      localStorage.setItem('monsterr_claimed_quests', JSON.stringify(updatedClaimed));
-    } catch {
-      // ignore
+    sound.playCoin();
+
+    let goldAdd = 0;
+    let foodAdd = 0;
+    let gemsAdd = 0;
+    const newRunes = [...(playerState.runesInventory || [])];
+
+    if (quest.rewardType === 'gold') goldAdd = quest.rewardAmount;
+    if (quest.rewardType === 'food') foodAdd = quest.rewardAmount;
+    if (quest.rewardType === 'gems') gemsAdd = quest.rewardAmount;
+    if (quest.rewardType === 'rune') {
+      const rewardRune = createRuneInstance('strength', 2);
+      newRunes.push(rewardRune);
     }
 
+    const updatedQuests = quests.map((q) => {
+      if (q.id === quest.id) {
+        return { ...q, isClaimed: true };
+      }
+      return q;
+    });
+
+    onUpdatePlayerState({
+      ...playerState,
+      gold: playerState.gold + goldAdd,
+      food: playerState.food + foodAdd,
+      gems: playerState.gems + gemsAdd,
+      runesInventory: newRunes,
+      dailyQuests: updatedQuests,
+    });
+  };
+
+  const handleClaimMasterChest = () => {
+    if (!allCompleted) return;
+    sound.playSummonFanfare();
+
+    const masterRune = createRuneInstance('speed', 3);
     const updatedState: PlayerState = {
       ...playerState,
-      gold: playerState.gold + (quest.rewardType === 'gold' ? quest.rewardAmount : 0),
-      food: playerState.food + (quest.rewardType === 'food' ? quest.rewardAmount : 0),
-      gems: playerState.gems + (quest.rewardType === 'gems' ? quest.rewardAmount : 0),
-      xp: playerState.xp + 150,
+      gold: playerState.gold + 10000,
+      gems: playerState.gems + 50,
+      food: playerState.food + 5000,
+      runesInventory: [...(playerState.runesInventory || []), masterRune],
     };
 
-    onClaimReward(updatedState);
+    onUpdatePlayerState(updatedState);
+    alert('🎉 مبروك! فتحت صندوق المهام اليومية الأكبر: +10,000 ذهب و +50 جوهرة و +5000 طعام ورون سرعة III!');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none" dir="rtl">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-4 text-right"
+        className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh]"
       >
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-400" />
-            <h3 className="text-lg font-black text-white">المهام والإنجازات اليومية</h3>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <Gift className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg sm:text-xl font-black text-white">
+                المهام اليومية والمكافآت (Daily Quests)
+              </h3>
+              <p className="text-xs text-slate-400">
+                أكمل مهام تدريب الوحوش والمعارك لربح الذهب والجواهر وصندوق المهام الأكبر
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
+            className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
-          {quests.map((q) => {
-            const isCompleted = q.currentCount >= q.targetCount;
-            const progressPct = Math.min(100, Math.round((q.currentCount / q.targetCount) * 100));
+        {/* Master Daily Chest Progress Banner */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-600/30 via-slate-950 to-purple-950/40 border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div>
+            <span className="text-xs font-black text-amber-300">صندوق النخبة اليومي (Master Chest):</span>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-48 sm:w-64 h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
+                  style={{ width: `${(completedCount / quests.length) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs font-black text-white">
+                {completedCount}/{quests.length} مكتمل
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleClaimMasterChest}
+            disabled={!allCompleted}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ${
+              allCompleted
+                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.7)] animate-pulse'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>فتح الصندوق الأكبر (50💎 + 10k💰)</span>
+          </button>
+        </div>
+
+        {/* Quests List */}
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+          {quests.map((quest) => {
+            const isDone = quest.currentCount >= quest.targetCount;
+            const progressPct = Math.min(100, Math.round((quest.currentCount / quest.targetCount) * 100));
 
             return (
               <div
-                key={q.id}
-                className={`p-3.5 rounded-2xl border transition-all flex flex-col gap-2.5 ${
-                  q.claimed
+                key={quest.id}
+                className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
+                  quest.isClaimed
                     ? 'bg-slate-950/40 border-slate-850 opacity-60'
-                    : isCompleted
-                    ? 'bg-amber-950/20 border-amber-500/40 shadow-md'
+                    : isDone
+                    ? 'bg-emerald-950/20 border-emerald-500/50 shadow-md'
                     : 'bg-slate-950/70 border-slate-800'
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    {q.claimed ? (
-                      <CheckCircle2 className="w-5 h-5 text-slate-500 shrink-0" />
-                    ) : isCompleted ? (
-                      <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
-                    ) : (
-                      <Circle className="w-5 h-5 text-slate-600 shrink-0" />
-                    )}
-                    <div>
-                      <h4 className="text-xs font-black text-white">{q.titleAr}</h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{q.descAr}</p>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">{quest.icon}</span>
+                  <div className="truncate text-right">
+                    <h4 className="text-xs sm:text-sm font-black text-white truncate">
+                      {quest.titleAr}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 truncate">{quest.descriptionAr}</p>
 
-                  {/* Reward Badge */}
-                  <div className="flex items-center gap-1 bg-slate-900 px-2 py-1 rounded-lg border border-slate-800 text-xs font-extrabold shrink-0">
-                    {q.rewardType === 'gold' && (
-                      <>
-                        <Coins className="w-3.5 h-3.5 text-amber-400" />
-                        <span className="text-amber-400">+{q.rewardAmount}</span>
-                      </>
-                    )}
-                    {q.rewardType === 'food' && (
-                      <>
-                        <Wheat className="w-3.5 h-3.5 text-emerald-400" />
-                        <span className="text-emerald-400">+{q.rewardAmount}</span>
-                      </>
-                    )}
-                    {q.rewardType === 'gems' && (
-                      <>
-                        <Gem className="w-3.5 h-3.5 text-cyan-400" />
-                        <span className="text-cyan-400">+{q.rewardAmount}</span>
-                      </>
-                    )}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="w-24 sm:w-32 h-1.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold">
+                        {quest.currentCount}/{quest.targetCount}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress bar and Claim button */}
-                <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-850">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1 font-bold">
-                      <span>التقدم</span>
-                      <span>
-                        {q.currentCount} / {q.targetCount} ({progressPct}%)
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          isCompleted ? 'bg-amber-400' : 'bg-blue-500'
-                        }`}
-                        style={{ width: `${progressPct}%` }}
-                      />
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-black text-amber-400">
+                    +{quest.rewardAmount}{' '}
+                    {quest.rewardType === 'gold'
+                      ? 'ذهب'
+                      : quest.rewardType === 'gems'
+                      ? '💎'
+                      : quest.rewardType === 'food'
+                      ? 'طعام'
+                      : 'رون'}
+                  </span>
 
-                  <button
-                    onClick={() => handleClaim(q)}
-                    disabled={!isCompleted || q.claimed}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs shrink-0 transition-all ${
-                      q.claimed
-                        ? 'bg-slate-850 text-slate-500 cursor-not-allowed'
-                        : isCompleted
-                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md active:scale-95'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {q.claimed ? 'تم الاستلام' : isCompleted ? 'استلام المكافأة' : 'قيد التقدم'}
-                  </button>
+                  {quest.isClaimed ? (
+                    <span className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-xs font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      تم الاستلام
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleClaimQuest(quest)}
+                      disabled={!isDone}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition ${
+                        isDone
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                      }`}
+                    >
+                      استلام
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-
-        <button
-          onClick={onClose}
-          className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl"
-        >
-          إغلاق
-        </button>
       </motion.div>
     </div>
   );

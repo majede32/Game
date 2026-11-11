@@ -55,6 +55,11 @@ import {
   Gift,
 } from 'lucide-react';
 import { MonsterBattleSprite } from './MonsterBattleSprite';
+import { BattlePrepScreen } from './battle/BattlePrepScreen';
+import { BattleCombatArena } from './battle/BattleCombatArena';
+import { BattleResultsModal } from './battle/BattleResultsModal';
+import { TeamSelectorModal } from './battle/TeamSelectorModal';
+import { ArenaSelectorModal } from './battle/ArenaSelectorModal';
 
 interface BattleViewProps {
   playerState: PlayerState;
@@ -1272,180 +1277,17 @@ export const BattleView: React.FC<BattleViewProps> = ({
       {/* VIEW 2: TEAM PREPARATION & STAGE PREVIEW (Monster Legends UI)  */}
       {/* ============================================================== */}
       {inspectingStage && !inActiveBattle && (
-        <div className="flex flex-col gap-4">
-          {/* Top Bar with Stage Title & Close */}
-          <div className="flex items-center justify-between bg-slate-900/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-800 shadow-md">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setInspectingStage(null)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
-                title="الرجوع لقائمة المراحل"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <div>
-                <h3 className="text-base sm:text-lg font-black text-white">{inspectingStage.nameAr}</h3>
-                <span className="text-xs text-amber-400 font-bold">{inspectingStage.subtitle} · صعوبة {inspectingStage.difficulty}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsArenaSelectorOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/30"
-              >
-                <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">تبديل الساحة:</span>
-                <span>{currentArena.nameAr.split(' ')[0]}</span>
-              </button>
-
-              <button
-                onClick={() => setIsTeamSelectorOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 rounded-xl text-xs font-bold border border-cyan-500/30"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>تعديل الفريق</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Authentic Monster Legends Team Lineup Stage */}
-          <div className="relative w-full min-h-[480px] sm:min-h-[540px] md:min-h-[600px] rounded-3xl overflow-hidden border border-slate-800 shadow-2xl flex flex-col justify-between p-4 sm:p-6">
-            {/* Realistic HD Arena Backdrop */}
-            <div
-              className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-              style={{ backgroundImage: `url('${currentArena.image}')` }}
-            />
-            {/* Subtle atmospheric vignette */}
-            <div className={`absolute inset-0 bg-gradient-to-t ${currentArena.overlayTint} pointer-events-none`} />
-
-            {/* Top Team Headers */}
-            <div className="relative z-10 flex items-center justify-between text-xs sm:text-sm font-black">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/80 backdrop-blur-md text-white border border-blue-400 shadow-lg">
-                <Shield className="w-3.5 h-3.5" />
-                <span>فريقك الأسطوري ({currentTeamMonsters.length}/3)</span>
-              </div>
-
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/80 backdrop-blur-md text-white border border-red-400 shadow-lg">
-                <Skull className="w-3.5 h-3.5" />
-                <span>فريق الخصم ({stageEnemyMonsters.length}/3)</span>
-              </div>
-            </div>
-
-            {/* Stepped Monster Legends Team Staging Area (Real illustrated monsters on realistic arena terrain) */}
-            <div className="relative z-10 w-full h-full my-auto grid grid-cols-2 gap-4 items-center">
-              {/* Player 3 Monsters on Left (stepped depth formation) */}
-              <div className="relative flex flex-col justify-around h-[360px] sm:h-[420px]">
-                {currentTeamMonsters.map((monster, idx) => (
-                  <div
-                    key={monster.id}
-                    className={`relative flex items-center gap-3 transition-transform ${
-                      idx === 1 ? 'translate-x-6 sm:translate-x-12 scale-105' : 'scale-95'
-                    }`}
-                  >
-                    {/* Real Full Monster Figure with Breathing Idle */}
-                    <motion.div
-                      animate={{ y: [0, -6, 0], scaleY: [1, 1.02, 1] }}
-                      transition={{ repeat: Infinity, duration: 2.8 + idx * 0.4, ease: 'easeInOut' }}
-                      className="relative w-24 h-28 sm:w-32 sm:h-38 md:w-38 md:h-44 flex items-center justify-center"
-                    >
-                      {/* Contact shadow on arena ground */}
-                      <div className="absolute -bottom-2 w-20 sm:w-28 h-5 bg-black/60 rounded-full blur-xs pointer-events-none" />
-                      <img
-                        src={monster.avatar}
-                        alt={monster.name}
-                        className="w-full h-full object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
-                      />
-                    </motion.div>
-
-                    {/* Monster Legends Nameplate Badge: (Rarity) Name Lvl X */}
-                    <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex flex-col items-center gap-0.5 shadow-xl text-center">
-                      <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black text-white">
-                        <span className="w-4 h-4 rounded-full bg-gradient-to-b from-amber-300 to-amber-600 text-slate-950 font-black text-[9px] flex items-center justify-center">
-                          {monster.stars >= 3 ? 'L' : monster.stars === 2 ? 'R' : 'C'}
-                        </span>
-                        <span>{monster.nameAr.split(' ')[0]}</span>
-                        <span className="text-amber-400 font-mono text-[10px]">Lvl {monster.level}</span>
-                      </div>
-                      <span className="text-[9px] font-bold text-slate-300">
-                        {monster.element === 'fire' && '🔥 ناري'}
-                        {monster.element === 'water' && '💧 مائي'}
-                        {monster.element === 'earth' && '⛰️ أرضي'}
-                        {monster.element === 'nature' && '🌿 طبيعي'}
-                        {monster.element === 'thunder' && '⚡ رعدي'}
-                        {monster.element === 'dark' && '🌑 ظلامي'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Enemy 3 Monsters on Right (stepped depth formation) */}
-              <div className="relative flex flex-col justify-around h-[360px] sm:h-[420px] items-end">
-                {stageEnemyMonsters.map((monster, idx) => (
-                  <div
-                    key={idx}
-                    className={`relative flex items-center flex-row-reverse gap-3 transition-transform ${
-                      idx === 1 ? '-translate-x-6 sm:-translate-x-12 scale-105' : 'scale-95'
-                    }`}
-                  >
-                    {/* Real Full Monster Figure with Breathing Idle */}
-                    <motion.div
-                      animate={{ y: [0, -6, 0], scaleY: [1, 1.02, 1] }}
-                      transition={{ repeat: Infinity, duration: 2.8 + idx * 0.4, ease: 'easeInOut' }}
-                      className="relative w-24 h-28 sm:w-32 sm:h-38 md:w-38 md:h-44 flex items-center justify-center -scale-x-100"
-                    >
-                      {/* Contact shadow on arena ground */}
-                      <div className="absolute -bottom-2 w-20 sm:w-28 h-5 bg-black/60 rounded-full blur-xs pointer-events-none" />
-                      <img
-                        src={monster.avatar}
-                        alt={monster.name}
-                        className="w-full h-full object-contain filter drop-shadow-[0_12px_20px_rgba(0,0,0,0.85)]"
-                      />
-                    </motion.div>
-
-                    {/* Monster Legends Nameplate Badge: (Rarity) Name Lvl X */}
-                    <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl border border-slate-700/80 flex flex-col items-center gap-0.5 shadow-xl text-center">
-                      <div className="flex items-center gap-1 text-[11px] sm:text-xs font-black text-white">
-                        <span className="w-4 h-4 rounded-full bg-gradient-to-b from-red-400 to-red-700 text-white font-black text-[9px] flex items-center justify-center">
-                          {monster.stars >= 3 ? 'L' : monster.stars === 2 ? 'R' : 'C'}
-                        </span>
-                        <span>{monster.nameAr.split(' ')[0]}</span>
-                        <span className="text-red-400 font-mono text-[10px]">Lvl {monster.level}</span>
-                      </div>
-                      <span className="text-[9px] font-bold text-slate-300">
-                        {monster.element === 'fire' && '🔥 ناري'}
-                        {monster.element === 'water' && '💧 مائي'}
-                        {monster.element === 'earth' && '⛰️ أرضي'}
-                        {monster.element === 'nature' && '🌿 طبيعي'}
-                        {monster.element === 'thunder' && '⚡ رعدي'}
-                        {monster.element === 'dark' && '🌑 ظلامي'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom Action Command Bar (Exact buttons from Monster Legends: CHANGE TEAM & FIGHT!) */}
-            <div className="relative z-10 flex items-center justify-center gap-4 pt-4 border-t border-slate-800/80">
-              <button
-                onClick={() => setIsTeamSelectorOpen(true)}
-                className="px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm rounded-2xl shadow-xl border border-cyan-400/50 transition-transform active:scale-95"
-              >
-                تعديل الفريق (CHANGE TEAM)
-              </button>
-
-              <button
-                onClick={() => startActiveBattle()}
-                className="px-10 py-3.5 bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 hover:from-red-500 hover:to-yellow-400 text-slate-950 font-black text-base rounded-2xl shadow-[0_0_35px_rgba(245,158,11,0.8)] border border-yellow-300 transition-transform active:scale-95 flex items-center gap-2"
-              >
-                <Swords className="w-5 h-5 fill-current" />
-                <span>بدء القتال! (FIGHT!)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <BattlePrepScreen
+          stageTitle={inspectingStage.nameAr}
+          stageSubtitle={`${inspectingStage.subtitle} · صعوبة ${inspectingStage.difficulty}`}
+          currentArena={currentArena}
+          playerTeam={currentTeamMonsters}
+          enemyTeam={stageEnemyMonsters}
+          onStartFight={() => startActiveBattle()}
+          onChangeTeam={() => setIsTeamSelectorOpen(true)}
+          onOpenArenaSelector={() => setIsArenaSelectorOpen(true)}
+          onClose={() => setInspectingStage(null)}
+        />
       )}
 
       {/* ============================================================== */}
@@ -1874,171 +1716,29 @@ export const BattleView: React.FC<BattleViewProps> = ({
       {/* MODAL 1: REALISTIC ARENA SELECTOR                              */}
       {/* ============================================================== */}
       {isArenaSelectorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-3xl bg-slate-900 border border-slate-700 rounded-3xl p-5 md:p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-amber-400" />
-                <h3 className="text-lg font-black text-white">اختيار ساحة المعركة الواقعية</h3>
-              </div>
-              <button
-                onClick={() => setIsArenaSelectorOpen(false)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400">
-              اختر البيئة والساحة الواقعية التي ترغب بخوض المعارك فيها (تتغير الخلفية، الإضاءة، والمؤثرات الجوية فورياً):
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {REALISTIC_ARENAS.map((arena) => {
-                const isSelected = arena.id === selectedArenaId;
-                return (
-                  <div
-                    key={arena.id}
-                    onClick={() => {
-                      sound.playCoin();
-                      setSelectedArenaId(arena.id);
-                    }}
-                    className={`cursor-pointer rounded-2xl overflow-hidden border-2 transition-all flex flex-col ${
-                      isSelected
-                        ? 'border-amber-400 ring-4 ring-amber-400/40 shadow-xl scale-102'
-                        : 'border-slate-800 hover:border-slate-600 opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    {/* Arena Image Thumbnail */}
-                    <div className="relative h-28 w-full bg-slate-950">
-                      <img
-                        src={arena.image}
-                        alt={arena.nameAr}
-                        className="w-full h-full object-cover"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 shadow-md">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                          <span>الساحة النشطة</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Arena Details */}
-                    <div className="p-3 bg-slate-950/90 flex flex-col justify-between flex-1 gap-1.5">
-                      <div>
-                        <h4 className="text-xs font-black text-white">{arena.nameAr}</h4>
-                        <p className="text-[10px] text-slate-400 line-clamp-2 mt-0.5 leading-snug">
-                          {arena.subtitleAr}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setIsArenaSelectorOpen(false)}
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs shadow-md"
-              >
-                تأكيد واختيار الساحة
-              </button>
-            </div>
-          </motion.div>
-        </div>
+        <ArenaSelectorModal
+          selectedArenaId={selectedArenaId}
+          onSelectArena={(arenaId) => {
+            sound.playCoin();
+            setSelectedArenaId(arenaId);
+          }}
+          onClose={() => setIsArenaSelectorOpen(false)}
+        />
       )}
 
       {/* ============================================================== */}
       {/* MODAL 2: TEAM SELECTOR (CHANGE TEAM)                           */}
       {/* ============================================================== */}
       {isTeamSelectorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl p-5 md:p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-lg font-black text-white">تعديل تشكيلة المعركة (3 وحوش)</h3>
-              </div>
-              <button
-                onClick={() => setIsTeamSelectorOpen(false)}
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-400">
-              اختر حتى 3 من وحوشك لخوض المعارك بها ({selectedPlayerMonsterIds.length}/3 محدد):
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {playerState.monsters.map((monster) => {
-                const isSelected = selectedPlayerMonsterIds.includes(monster.id);
-                const elemColor = ELEMENT_COLORS[monster.element] || ELEMENT_COLORS.fire;
-
-                return (
-                  <div
-                    key={monster.id}
-                    onClick={() => {
-                      sound.playCoin();
-                      toggleMonsterInTeam(monster.id);
-                    }}
-                    className={`cursor-pointer rounded-2xl p-3 border-2 transition-all flex items-center gap-3 ${
-                      isSelected
-                        ? 'border-cyan-400 bg-cyan-950/30 ring-2 ring-cyan-400/40 shadow-lg'
-                        : 'border-slate-800 bg-slate-950/80 hover:border-slate-700 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0">
-                      <img src={monster.avatar} alt={monster.name} className="w-full h-full object-cover" />
-                    </div>
-
-                    <div className="flex flex-col flex-1 gap-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-white">{monster.nameAr.split(' ')[0]}</span>
-                        <span className="text-amber-400 font-mono text-[11px] font-bold">Lv.{monster.level}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <span className={`px-1.5 py-0.2 rounded font-bold ${elemColor.bg} ${elemColor.text}`}>
-                          {monster.element.toUpperCase()}
-                        </span>
-                        <span>{monster.maxHp} HP</span>
-                        <span>{monster.attack} هجوم</span>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center border ${
-                        isSelected ? 'bg-cyan-500 border-cyan-300 text-slate-950' : 'border-slate-700'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setIsTeamSelectorOpen(false)}
-                className="px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black rounded-xl text-xs shadow-md"
-              >
-                تأكيد التشكيلة
-              </button>
-            </div>
-          </motion.div>
-        </div>
+        <TeamSelectorModal
+          monsters={playerState.monsters}
+          selectedMonsterIds={selectedPlayerMonsterIds}
+          onToggleMonster={(monsterId) => {
+            sound.playCoin();
+            toggleMonsterInTeam(monsterId);
+          }}
+          onClose={() => setIsTeamSelectorOpen(false)}
+        />
       )}
     </div>
   );

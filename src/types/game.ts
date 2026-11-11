@@ -136,6 +136,18 @@ export interface MonsterEgg {
   isReady: boolean;
 }
 
+export interface DailyQuest {
+  id: string;
+  titleAr: string;
+  descriptionAr: string;
+  targetCount: number;
+  currentCount: number;
+  isClaimed: boolean;
+  rewardType: 'gold' | 'food' | 'gems' | 'rune';
+  rewardAmount: number;
+  icon: string;
+}
+
 export interface PlayerState {
   playerName: string;
   level: number;
@@ -153,6 +165,8 @@ export interface PlayerState {
   defenseMonsterIds: string[];
   runesInventory: MonsterRune[];
   colosseumScores: Record<string, number>;
+  dailyQuests?: DailyQuest[];
+  gemSummonPityCounter?: number;
 }
 
 export interface BattleMonster {
